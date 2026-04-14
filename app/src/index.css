@@ -18,29 +18,29 @@
     /* Stato */
     --ok:#3FA95A;
     --warn:#E9A23B;
-    --danger:var(--danger);
+    --danger:#E24B4A;
     /* Superficie */
-    --bg:var(--bg);
-    --bg-grad:linear-gradient(180deg,var(--bg) 0%,var(--surface-2) 100%);
+    --bg:#FAF8F5;
+    --bg-grad:linear-gradient(180deg,#FAF8F5 0%,#F4EFE8 100%);
     --card:#FFFFFF;
     --ink:#1F1B17;
     --ink-soft:#6C655D;
     --line:#E8E2DA;
-    --line-strong:var(--line-strong);
-    --chiusura-a:var(--chiusura-a);
-    --chiusura-b:var(--chiusura-b);
-    --chiusura-bar:var(--chiusura-bar);
-    --surface-2:var(--surface-2);
-    --surface-3:var(--surface-3);
-    --note-bg:var(--note-bg);
-    --note-border:var(--note-border);
-    --banner-bg:var(--banner-bg);
-    --banner-text:var(--banner-text);
-    --banner-border:var(--banner-border);
-    --pill-conf-bg:var(--pill-conf-bg);--pill-conf-text:var(--pill-conf-text);
-    --pill-ant-bg:var(--pill-ant-bg);--pill-ant-text:var(--banner-text);
-    --pill-prop-bg:var(--pill-prop-bg);--pill-prop-text:var(--pill-prop-text);
-    --danger-bg:var(--danger-bg);--danger-text:var(--danger-text);
+    --line-strong:#C8BFB3;
+    --chiusura-a:#CFC9BE;
+    --chiusura-b:#E2DCD1;
+    --chiusura-bar:#8A8373;
+    --surface-2:#F4EFE8;
+    --surface-3:#FBF7F1;
+    --note-bg:#FFFDF6;
+    --note-border:#F0E3B6;
+    --banner-bg:#FFF7E0;
+    --banner-text:#7A4A08;
+    --banner-border:#F2DFA8;
+    --pill-conf-bg:#DDF3E1;--pill-conf-text:#235C33;
+    --pill-ant-bg:#FCEBCE;--pill-ant-text:#7A4A08;
+    --pill-prop-bg:#ECE8E2;--pill-prop-text:#5B544B;
+    --danger-bg:#F9DADA;--danger-text:#8A1F1F;
   }
   [data-theme="dark"]{
     --brand:#4BBF85;
