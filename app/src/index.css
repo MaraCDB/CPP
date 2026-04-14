@@ -2,4 +2,310 @@
 @tailwind components;
 @tailwind utilities;
 
-html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+  :root{
+    /* Brand verde (tema chiaro) */
+    --brand:#2E8F5C;
+    --brand-dark:#1B4F34;
+    --brand-soft:#DDEEE1;
+    --brand-focus:rgba(46,143,92,.2);
+    /* Camere (invariati, identità) */
+    --lampone:#E8528B;
+    --lampone-soft:#FBDCE8;
+    --lampone-dark:#8E1F4A;
+    --mirtillo:#5B6FD6;
+    --mirtillo-soft:#DFE3F7;
+    --mirtillo-dark:#2A3785;
+    /* Stato */
+    --ok:#3FA95A;
+    --warn:#E9A23B;
+    --danger:var(--danger);
+    /* Superficie */
+    --bg:var(--bg);
+    --bg-grad:linear-gradient(180deg,var(--bg) 0%,var(--surface-2) 100%);
+    --card:#FFFFFF;
+    --ink:#1F1B17;
+    --ink-soft:#6C655D;
+    --line:#E8E2DA;
+    --line-strong:var(--line-strong);
+    --chiusura-a:var(--chiusura-a);
+    --chiusura-b:var(--chiusura-b);
+    --chiusura-bar:var(--chiusura-bar);
+    --surface-2:var(--surface-2);
+    --surface-3:var(--surface-3);
+    --note-bg:var(--note-bg);
+    --note-border:var(--note-border);
+    --banner-bg:var(--banner-bg);
+    --banner-text:var(--banner-text);
+    --banner-border:var(--banner-border);
+    --pill-conf-bg:var(--pill-conf-bg);--pill-conf-text:var(--pill-conf-text);
+    --pill-ant-bg:var(--pill-ant-bg);--pill-ant-text:var(--banner-text);
+    --pill-prop-bg:var(--pill-prop-bg);--pill-prop-text:var(--pill-prop-text);
+    --danger-bg:var(--danger-bg);--danger-text:var(--danger-text);
+  }
+  [data-theme="dark"]{
+    --brand:#4BBF85;
+    --brand-dark:#2E8F5C;
+    --brand-soft:#1B3A2A;
+    --brand-focus:rgba(75,191,133,.3);
+    --lampone:#FF7AAF;
+    --lampone-soft:#4A1E36;
+    --lampone-dark:#FBDCE8;
+    --mirtillo:#869AF0;
+    --mirtillo-soft:#1F2A54;
+    --mirtillo-dark:#DFE3F7;
+    --warn:#F5B85E;
+    --bg:#16130F;
+    --bg-grad:linear-gradient(180deg,#1C1813 0%,#16130F 100%);
+    --card:#23201B;
+    --ink:#EFEAE2;
+    --ink-soft:#A09687;
+    --line:#3A342D;
+    --line-strong:#4E473E;
+    --chiusura-a:#3A342D;
+    --chiusura-b:#2C2721;
+    --chiusura-bar:#5E564B;
+    --surface-2:#2C2721;
+    --surface-3:#282420;
+    --note-bg:#2A2618;
+    --note-border:#5A4F1F;
+    --banner-bg:#3A2E12;
+    --banner-text:#F0C87C;
+    --banner-border:#5A4F1F;
+    --pill-conf-bg:#1F3E2A;--pill-conf-text:#9FDCB0;
+    --pill-ant-bg:#3E2F12;--pill-ant-text:#F0C87C;
+    --pill-prop-bg:#322E26;--pill-prop-text:#BAB0A1;
+    --danger-bg:#4A1E1E;--danger-text:#F5B0B0;
+  }
+  html,body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:contain}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+  header{padding-top:calc(env(safe-area-inset-top) + 12px) !important}
+  /* touch targets minimi */
+  button,.chip,input[type=checkbox]{touch-action:manipulation}
+
+  /* ============ CALENDARIO VERTICALE ============ */
+  .months-wrap{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
+  .months-wrap::-webkit-scrollbar{height:10px}
+  .months-wrap::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:5px}
+
+  .month-col{flex:0 0 auto;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+  .month-head{padding:10px 12px;background:var(--surface-2);font-weight:700;font-size:13px;text-align:center;border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:.04em}
+  .month-sub-head{display:grid;grid-template-columns:28px 1fr 1fr;background:var(--surface-3);border-bottom:1px solid var(--line);font-size:10px;font-weight:600;color:var(--ink-soft)}
+  .month-sub-head>div{padding:6px 2px;text-align:center;border-right:1px solid var(--line)}
+  .month-sub-head>div:last-child{border-right:none}
+
+  .month-grid{display:grid}
+
+  .day-row{display:grid;grid-template-columns:28px 1fr 1fr;border-bottom:1px solid var(--line);min-height:26px}
+  .day-row:last-child{border-bottom:none}
+  .day-row.we{background:rgba(230,220,205,.22)}
+  .day-row.today .day-num{background:var(--brand);color:#fff;border-radius:6px}
+
+  .day-num{font-size:10px;font-weight:600;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;border-right:1px solid var(--line);padding:2px 0;line-height:1;flex-direction:column;gap:1px}
+  .day-num .dn{font-size:11px;color:var(--ink)}
+  .day-num .dw{font-size:8px;opacity:.7;text-transform:uppercase}
+
+  .room-cell{border-right:1px solid var(--line);position:relative;cursor:pointer;transition:background .1s}
+  .room-cell:last-child{border-right:none}
+  .room-cell:hover:not(.booked){background:var(--brand-focus)}
+
+  /* ==== Stati prenotazione (cella) ==== */
+  .room-cell.booked{cursor:pointer}
+  .room-cell.lampone.confermato{background:var(--lampone)}
+  .room-cell.lampone.anticipo_atteso{background:var(--lampone-soft)}
+  .room-cell.mirtillo.confermato{background:var(--mirtillo)}
+  .room-cell.mirtillo.anticipo_atteso{background:var(--mirtillo-soft)}
+  .room-cell.lampone.proposta{background:repeating-linear-gradient(45deg,var(--lampone-soft),var(--lampone-soft) 4px,var(--card) 4px,var(--card) 8px)}
+  .room-cell.mirtillo.proposta{background:repeating-linear-gradient(45deg,var(--mirtillo-soft),var(--mirtillo-soft) 4px,var(--card) 4px,var(--card) 8px)}
+
+  /* bordo "avviso" per anticipo_atteso */
+  .room-cell.anticipo_atteso{box-shadow:inset 3px 0 0 var(--warn)}
+
+  /* pattern-side per proposte */
+  .room-cell.proposta{box-shadow:inset 2px 0 0 var(--ink-soft)}
+  .room-cell.lampone.proposta{box-shadow:inset 2px 0 0 var(--lampone)}
+  .room-cell.mirtillo.proposta{box-shadow:inset 2px 0 0 var(--mirtillo)}
+
+  /* testo nome/rif nella prima cella della prenotazione */
+  .room-cell .label{position:absolute;inset:1px;padding:2px 4px;font-size:10px;font-weight:700;line-height:1.1;overflow:hidden;pointer-events:none;display:flex;align-items:flex-start;gap:2px;flex-direction:column}
+  .room-cell.lampone.confermato .label,.room-cell.mirtillo.confermato .label{color:#fff}
+  .room-cell.lampone.anticipo_atteso .label{color:var(--lampone-dark)}
+  .room-cell.mirtillo.anticipo_atteso .label{color:var(--mirtillo-dark)}
+  .room-cell.lampone.proposta .label{color:var(--lampone-dark)}
+  .room-cell.mirtillo.proposta .label{color:var(--mirtillo-dark)}
+  .room-cell .label .ref{font-size:8px;opacity:.85;font-weight:500}
+
+  /* bordi arrotondati top/bottom della prenotazione */
+  .room-cell.first-of-booking{border-top-left-radius:6px;border-top-right-radius:6px}
+  .room-cell.last-of-booking{border-bottom-left-radius:6px;border-bottom-right-radius:6px}
+
+  /* ==== Chiusura struttura ==== */
+  .day-row.chiusura .room-cell:not(.booked){
+    background:repeating-linear-gradient(45deg,var(--chiusura-a),var(--chiusura-a) 5px,var(--chiusura-b) 5px,var(--chiusura-b) 10px);
+    cursor:pointer;
+  }
+  .day-row.chiusura.closure-first .room-cell:not(.booked){
+    box-shadow:inset 0 3px 0 var(--chiusura-bar);
+  }
+  .day-row.chiusura.closure-last .room-cell:not(.booked){
+    box-shadow:inset 0 -3px 0 var(--chiusura-bar);
+  }
+  .day-row.chiusura .room-cell.booked::after{
+    content:"🔒";
+    position:absolute;top:1px;right:2px;font-size:9px;z-index:2;
+  }
+
+  /* ============ VISTE COMPATTE ============ */
+  /* Semestre: righe più basse, nessun testo */
+  .wrap-sem .day-row{min-height:14px}
+  .wrap-sem .day-num{font-size:9px;padding:1px 0}
+  .wrap-sem .day-num .dw{display:none}
+  .wrap-sem .room-cell .label{display:none}
+  .wrap-sem .month-col{min-width:150px}
+
+  /* Anno: righe minuscole */
+  .wrap-anno .day-row{min-height:9px}
+  .wrap-anno .day-num{font-size:7px;padding:0}
+  .wrap-anno .day-num .dw{display:none}
+  .wrap-anno .room-cell .label{display:none}
+  .wrap-anno .month-col{min-width:100px}
+  .wrap-anno .month-sub-head>div{padding:3px 0;font-size:9px}
+  .wrap-anno .month-head{padding:6px;font-size:11px}
+
+  /* ============ VISTA MESE "GOOGLE CALENDAR" ============ */
+  .mg{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .mg-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface-2);border-bottom:1px solid var(--line)}
+  .mg-head>div{padding:8px 4px;text-align:center;font-size:11px;font-weight:600;color:var(--ink-soft);border-right:1px solid var(--line);text-transform:uppercase;letter-spacing:.04em}
+  .mg-head>div:last-child{border-right:none}
+  .mg-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+  .mg-cell{min-height:96px;border-right:1px solid var(--line);border-top:1px solid var(--line);padding:4px 4px 2px;position:relative;cursor:pointer;display:grid;grid-template-rows:auto 1fr;gap:3px}
+  .mg-rooms{display:grid;grid-template-columns:1fr 1fr;gap:3px;min-height:0}
+  .mg-cell:nth-child(7n){border-right:none}
+  .mg-cell.out{background:var(--bg);opacity:.45;cursor:default}
+  .mg-cell:hover:not(.out){background:var(--brand-focus)}
+  .mg-cell .mg-day{font-size:11px;font-weight:700;color:var(--ink-soft);display:flex;align-items:center;justify-content:flex-end;padding:2px 4px}
+  .mg-cell.today .mg-day{background:var(--brand);color:#fff;border-radius:50%;width:22px;height:22px;align-self:flex-end;padding:0;justify-content:center}
+  .mg-cell.we{background:rgba(230,220,205,.22)}
+  .mg-cell.chiusura{background:repeating-linear-gradient(45deg,var(--chiusura-a),var(--chiusura-a) 5px,var(--chiusura-b) 5px,var(--chiusura-b) 10px)}
+  .mg-cell.chiusura.closure-first{box-shadow:inset 3px 0 0 var(--chiusura-bar)}
+  .mg-cell.chiusura.closure-last{box-shadow:inset -3px 0 0 var(--chiusura-bar)}
+
+  .mg-slot{border-radius:4px;padding:3px 5px;font-size:10px;font-weight:700;overflow:hidden;display:flex;align-items:flex-start;gap:2px;flex-direction:column;justify-content:flex-start;line-height:1.15;min-height:100%}
+  .mg-slot span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .mg-slot.empty{background:transparent;box-shadow:none}
+  .mg-slot .ref{font-size:8px;opacity:.85;font-weight:500}
+  .mg-slot.lampone.confermato{background:var(--lampone);color:#fff}
+  .mg-slot.lampone.anticipo_atteso{background:var(--lampone-soft);color:var(--lampone-dark);box-shadow:inset 0 2px 0 var(--warn)}
+  .mg-slot.lampone.proposta{background:repeating-linear-gradient(45deg,var(--lampone-soft),var(--lampone-soft) 4px,var(--card) 4px,var(--card) 8px);color:var(--lampone-dark);box-shadow:inset 0 0 0 1px var(--lampone)}
+  .mg-slot.mirtillo.confermato{background:var(--mirtillo);color:#fff}
+  .mg-slot.mirtillo.anticipo_atteso{background:var(--mirtillo-soft);color:var(--mirtillo-dark);box-shadow:inset 0 2px 0 var(--warn)}
+  .mg-slot.mirtillo.proposta{background:repeating-linear-gradient(45deg,var(--mirtillo-soft),var(--mirtillo-soft) 4px,var(--card) 4px,var(--card) 8px);color:var(--mirtillo-dark);box-shadow:inset 0 0 0 1px var(--mirtillo)}
+  .mg-slot.closed-lock::before{content:"🔒";font-size:9px;margin-right:2px}
+
+  /* mese stretto su mobile */
+  @media(max-width:640px){
+    .mg-cell{min-height:76px;padding:2px}
+    .mg-slot{font-size:9px;padding:1px 4px;min-height:15px}
+    .mg-head>div{font-size:9px;padding:5px 2px}
+  }
+
+  /* Trimestre */
+  .wrap-trim .month-col{min-width:260px}
+  .wrap-trim .day-row{min-height:26px}
+
+  @media(max-width:640px){
+    .wrap-trim .month-col{min-width:190px}
+    .wrap-sem .month-col{min-width:120px}
+    .wrap-anno .month-col{min-width:82px}
+    .months-wrap{gap:8px}
+  }
+
+  /* ============ STATO PILL ============ */
+  .pill{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+  .pill.confermato{background:var(--pill-conf-bg);color:var(--pill-conf-text)}
+  .pill.anticipo_atteso{background:var(--pill-ant-bg);color:var(--banner-text)}
+  .pill.proposta{background:var(--pill-prop-bg);color:var(--pill-prop-text)}
+
+  /* ============ MODAL ============ */
+  .modal{position:fixed;inset:0;background:rgba(25,20,15,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal.open{display:flex}
+  .modal-box{background:var(--card);border-radius:16px;width:min(520px,100%);max-height:92vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  @media(max-width:640px){.modal-box{border-radius:16px 16px 0 0;align-self:flex-end;max-height:94vh}}
+
+  /* ============ FORM ============ */
+  label.field{display:block;margin-bottom:14px}
+  label.field>span{display:block;font-size:12px;color:var(--ink-soft);font-weight:600;margin-bottom:4px}
+  label.field input,label.field select,label.field textarea{width:100%;padding:11px 12px;border:1px solid var(--line-strong);border-radius:10px;font-size:16px;background:var(--card);color:var(--ink);font-family:inherit}
+  label.field input:focus,label.field select:focus,label.field textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-focus)}
+  label.field textarea{min-height:70px;resize:vertical}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .chip-group{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{padding:9px 14px;border-radius:999px;border:1px solid var(--line-strong);font-size:13px;cursor:pointer;background:var(--card);user-select:none;min-height:40px;display:inline-flex;align-items:center}
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* ============ BUTTONS ============ */
+  .btn{padding:9px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+  .btn-primary{background:var(--brand);color:#fff}
+  .btn-primary:hover{background:var(--brand-dark)}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line-strong)}
+  .btn-danger{background:var(--danger);color:#fff}
+
+  /* ============ SIDE PANEL ============ */
+  .side{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--card);box-shadow:-10px 0 30px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .25s;z-index:40;overflow-y:auto}
+  .side.open{transform:translateX(0)}
+
+  /* ============ BOTTOMBAR ============ */
+  .bottombar{background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;padding:10px 14px;gap:8px;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+  .bottombar .counter{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:var(--surface-2);font-size:13px;cursor:pointer;border:none;font-family:inherit;min-height:40px}
+  .bottombar .counter .badge{background:var(--ink);color:#fff;border-radius:999px;min-width:20px;height:20px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:600;padding:0 6px}
+  .bottombar .counter.warn .badge{background:var(--warn)}
+  .bottombar .btn{min-height:40px}
+  .bottombar .counter .lbl{display:inline}
+  @media(max-width:420px){
+    .bottombar{padding-left:10px;padding-right:10px}
+    .bottombar .counter .lbl{display:none}
+    .bottombar .counter{padding:8px 10px}
+  }
+
+  /* ============ VIEW SWITCH ============ */
+  .view-switch{display:inline-flex;border:1px solid var(--line-strong);border-radius:10px;overflow:hidden;background:var(--card)}
+  .view-switch button{padding:8px 12px;font-size:13px;background:none;border:none;cursor:pointer;font-family:inherit;color:var(--ink-soft);font-weight:600;min-width:40px}
+  .view-switch button.active{background:var(--ink);color:#fff}
+  .view-switch button .full{display:inline}
+  .view-switch button .short{display:none}
+  @media(max-width:640px){
+    .view-switch button{padding:6px 9px;min-width:32px}
+    .view-switch button .full{display:none}
+    .view-switch button .short{display:inline}
+  }
+
+  /* ============ HOME ============ */
+  .home{min-height:calc(100vh - 52px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;gap:32px;background:linear-gradient(180deg,var(--bg) 0%,var(--surface-2) 100%);position:relative}
+  .home-hero{text-align:center}
+  .home-hero .logo{width:72px;height:72px;border-radius:50%;margin:0 auto 14px;background:linear-gradient(135deg,var(--lampone),var(--mirtillo));display:flex;align-items:center;justify-content:center;font-size:36px;box-shadow:0 6px 20px rgba(0,0,0,.1)}
+  .home-hero h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+  .home-hero p{font-size:14px;color:var(--ink-soft);margin-top:4px}
+  .home-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:min(720px,100%)}
+  @media(max-width:640px){.home-buttons{grid-template-columns:1fr;max-width:380px}}
+  .home-btn{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 18px;cursor:pointer;font-family:inherit;text-align:left;transition:transform .15s,box-shadow .15s,border-color .15s;position:relative;display:flex;flex-direction:column;gap:8px;min-height:140px}
+  .home-btn:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.08);border-color:var(--line-strong)}
+  .home-btn .icn{font-size:36px;line-height:1}
+  .home-btn .ttl{font-size:18px;font-weight:700}
+  .home-btn .sub{font-size:12px;color:var(--ink-soft);line-height:1.4}
+  .home-btn .badge{position:absolute;top:14px;right:14px;min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:var(--warn);color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+  .home-btn .badge.neutral{background:var(--ink)}
+  .home-btn .badge.zero{display:none}
+
+  /* ============ QUICK NOTE BAR (dentro pannello Da fare) ============ */
+  .quicknote{display:flex;gap:8px;margin-bottom:12px}
+  .quicknote input{flex:1;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;font-size:14px;font-family:inherit}
+  .quicknote input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-focus)}
+
+  .promemoria-card{display:flex;gap:10px;align-items:flex-start;background:var(--note-bg);border:1px solid var(--note-border);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+  .promemoria-card input[type=checkbox]{margin-top:2px;width:18px;height:18px;accent-color:var(--warn);cursor:pointer}
+  .promemoria-card .txt{flex:1;font-size:13px;line-height:1.35}
+  .promemoria-card.done .txt{text-decoration:line-through;opacity:.5}
+  .promemoria-card .meta{font-size:11px;color:var(--ink-soft);margin-top:4px}
+  .promemoria-card .del{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:14px;opacity:.6}
+  .promemoria-card .del:hover{opacity:1;color:var(--danger)}
+  .section-title{font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
+  .section-title:first-child{margin-top:0}
