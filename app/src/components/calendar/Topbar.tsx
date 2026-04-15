@@ -2,6 +2,7 @@ import { useSettings } from '../../store/settings';
 import { useUI } from '../../store/ui';
 import { ViewSwitch } from './ViewSwitch';
 import { ThemeToggle } from '../ThemeToggle';
+import { SyncIndicator } from '../SyncIndicator';
 import { MONTHS, MONTHS_SHORT, parseISO, iso } from '../../lib/date';
 
 const MONTHS_COUNT = { mese: 1, trim: 3, sem: 6, anno: 12 } as const;
@@ -38,6 +39,7 @@ export const Topbar = () => {
         <button className="btn btn-ghost !p-2" onClick={() => shiftAnchor(MONTHS_COUNT[vista])}>▶</button>
         <button className="btn btn-ghost hidden sm:inline-block" onClick={today}>Oggi</button>
         <ThemeToggle />
+        <SyncIndicator />
       </div>
     </header>
   );

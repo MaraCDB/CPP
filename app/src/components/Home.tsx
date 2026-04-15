@@ -2,6 +2,7 @@ import { useBookings } from '../store/bookings';
 import { usePromemoria } from '../store/promemoria';
 import { useUI } from '../store/ui';
 import { ThemeToggle } from './ThemeToggle';
+import { SyncIndicator } from './SyncIndicator';
 import { parseISO, nightsBetween, iso } from '../lib/date';
 
 export const Home = () => {
@@ -24,6 +25,9 @@ export const Home = () => {
   return (
     <section className="home">
       <ThemeToggle floating />
+      <div style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top) + 14px)', right: '66px' }}>
+        <SyncIndicator />
+      </div>
       <div className="home-hero">
         <div className="logo" style={{ background: 'linear-gradient(135deg,var(--lampone),var(--mirtillo))' }}>🏡</div>
         <h1>Cuore di Bosco</h1>
