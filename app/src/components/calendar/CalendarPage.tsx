@@ -9,6 +9,7 @@ import { TodoPanel } from '../panels/TodoPanel';
 import { ArrivalsPanel } from '../panels/ArrivalsPanel';
 import { BookingForm } from '../forms/BookingForm';
 import { ClosureForm } from '../forms/ClosureForm';
+import { ReadOnlyBanner } from '../ReadOnlyBanner';
 
 export const CalendarPage = () => {
   const vista = useSettings(s => s.vista);
@@ -17,9 +18,7 @@ export const CalendarPage = () => {
   return (
     <>
       <Topbar />
-      <div className="px-4 py-2 text-[12px]" style={{ background: 'var(--banner-bg)', color: 'var(--banner-text)', borderBottom: '1px solid var(--banner-border)' }}>
-        🎨 <b>App locale</b> · dati in localStorage · Google Sheets in arrivo (Piano B)
-      </div>
+      <ReadOnlyBanner />
       <main className="p-3 md:p-5">
         {vista === 'mese' ? <MonthGoogleView /> : <VerticalGanttView />}
       </main>

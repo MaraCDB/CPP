@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { useBookings } from '../../store/bookings';
 import { useClosures } from '../../store/closures';
+import { useAuth } from '../../store/auth';
 import { Modal } from '../common/Modal';
 import { ChipGroup } from '../common/ChipGroup';
 import { checkConflicts } from '../../lib/conflicts';
@@ -16,6 +17,8 @@ const empty = (prefillCheckin?: string): Partial<Prenotazione> => ({
 });
 
 export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
+  const readonly = useAuth(s => s.readonly);
+  if (readonly) return null;
   const { items, add, update, remove } = useBookings();
   const closures = useClosures(s => s.items);
   const existing = id ? items.find(b => b.id === id) : undefined;

@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useClosures } from '../../store/closures';
+import { useAuth } from '../../store/auth';
 import { Modal } from '../common/Modal';
 
 interface Props { id?: string; onClose: () => void; }
 
 export const ClosureForm = ({ id, onClose }: Props) => {
+  const readonly = useAuth(s => s.readonly);
+  if (readonly) return null;
   const { items, add, update, remove } = useClosures();
   const existing = id ? items.find(c => c.id === id) : undefined;
   const [start, setStart] = useState(existing?.start || '');
