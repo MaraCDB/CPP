@@ -1,3 +1,8 @@
+import { useUI } from './store/ui';
+import { Home } from './components/Home';
+import { CalendarPage } from './components/calendar/CalendarPage';
+
 export default function App() {
-  return <div className="p-8 text-lg">Cuore di Bosco — app in costruzione</div>;
+  const page = useUI(s => s.page);
+  return page === 'home' ? <Home /> : <CalendarPage />;
 }
