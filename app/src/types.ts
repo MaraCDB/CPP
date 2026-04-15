@@ -47,3 +47,18 @@ export interface Conflict {
   block: boolean;
   msg: string;
 }
+
+export interface GoogleUser {
+  email: string;
+  name: string;
+  picture?: string;
+}
+
+export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'error' | 'unauth';
+
+export interface PendingOp {
+  id: string;
+  kind: 'upsert_booking' | 'delete_booking' | 'upsert_closure' | 'delete_closure' | 'upsert_promemoria' | 'delete_promemoria';
+  payload: unknown;
+  createdAt: string;
+}
