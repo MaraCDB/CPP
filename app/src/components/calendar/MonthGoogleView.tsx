@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useRef } from 'react';
+import type { ReactNode, TouchEvent } from 'react';
 import { useBookings } from '../../store/bookings';
 import { useClosures } from '../../store/closures';
 import { useSettings } from '../../store/settings';
@@ -24,8 +25,23 @@ export const MonthGoogleView = () => {
   const bookings = useBookings(s => s.items);
   const closures = useClosures(s => s.items);
   const anchor = useSettings(s => s.anchor);
+  const shiftAnchor = useSettings(s => s.shiftAnchor);
   const { openSide, openModal } = useUI();
   const TODAY = iso(new Date());
+
+  const touchRef = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  const onTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
+    if (!touchRef.current) return;
+    const dx = e.changedTouches[0].clientX - touchRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchRef.current.y;
+    touchRef.current = null;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+    shiftAnchor(dx < 0 ? 1 : -1);
+  };
 
   const a = parseISO(anchor);
   const y = a.getFullYear(), m = a.getMonth();
@@ -91,11 +107,13 @@ export const MonthGoogleView = () => {
   }
 
   return (
-    <div className="mg">
-      <div className="mg-head">
-        {['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(d => <div key={d}>{d}</div>)}
+    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="mg">
+        <div className="mg-head">
+          {['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(d => <div key={d}>{d}</div>)}
+        </div>
+        <div className="mg-grid">{cells}</div>
       </div>
-      <div className="mg-grid">{cells}</div>
     </div>
   );
 };
