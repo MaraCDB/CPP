@@ -25,6 +25,8 @@ export interface Prenotazione {
   prezzoTotale?: number;
   anticipo?: Anticipo;
   note?: string;
+  contattoResourceName?: string;
+  contattoEmail?: string;
   creatoIl: string;
   aggiornatoIl: string;
 }
