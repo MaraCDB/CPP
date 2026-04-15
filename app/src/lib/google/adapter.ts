@@ -3,7 +3,7 @@ import type { Prenotazione, Chiusura, Promemoria, Camera, Stato, ContattoVia, An
 export const BOOKING_HEADERS = [
   'id','camera','checkin','checkout','stato','nome','riferimento','num_ospiti',
   'contatto_via','contatto_valore','prezzo_totale','anticipo_importo','anticipo_data','anticipo_tipo',
-  'note','creato_il','aggiornato_il',
+  'note','contatto_resource_name','contatto_email','creato_il','aggiornato_il',
 ] as const;
 
 export const CLOSURE_HEADERS = ['id','start','end','note'] as const;
@@ -16,7 +16,8 @@ export const bookingToRow = (b: Prenotazione): string[] => [
   b.id, b.camera, b.checkin, b.checkout, b.stato, b.nome, opt(b.riferimento), optN(b.numOspiti),
   opt(b.contattoVia), opt(b.contattoValore), optN(b.prezzoTotale),
   optN(b.anticipo?.importo), opt(b.anticipo?.data), opt(b.anticipo?.tipo),
-  opt(b.note), b.creatoIl, b.aggiornatoIl,
+  opt(b.note), opt(b.contattoResourceName), opt(b.contattoEmail),
+  b.creatoIl, b.aggiornatoIl,
 ];
 
 export const rowToBooking = (r: string[]): Prenotazione => {
@@ -34,7 +35,9 @@ export const rowToBooking = (r: string[]): Prenotazione => {
       tipo: (r[13] || undefined) as AnticipoTipo | undefined,
     } : undefined,
     note: r[14] || undefined,
-    creatoIl: r[15], aggiornatoIl: r[16],
+    contattoResourceName: r[15] || undefined,
+    contattoEmail: r[16] || undefined,
+    creatoIl: r[17], aggiornatoIl: r[18],
   };
 };
 

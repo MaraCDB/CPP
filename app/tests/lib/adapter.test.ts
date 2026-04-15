@@ -7,7 +7,10 @@ const sample: Prenotazione = {
   stato: 'confermato', nome: 'Rossi', riferimento: '#12', numOspiti: 3,
   contattoVia: 'mail', contattoValore: 'rossi@mail.it', prezzoTotale: 320,
   anticipo: { importo: 112, data: '2026-03-20', tipo: 'bonifico' },
-  note: 'Arrivo 16', creatoIl: '2026-01-01T00:00:00.000Z', aggiornatoIl: '2026-01-01T00:00:00.000Z',
+  note: 'Arrivo 16',
+  contattoResourceName: 'people/c1234567890',
+  contattoEmail: 'rossi@mail.it',
+  creatoIl: '2026-01-01T00:00:00.000Z', aggiornatoIl: '2026-01-01T00:00:00.000Z',
 };
 
 describe('adapter', () => {
@@ -25,5 +28,16 @@ describe('adapter', () => {
     const row = bookingToRow(b);
     const back = rowToBooking(row);
     expect(back.anticipo).toBeUndefined();
+  });
+  it('handles missing contact link', () => {
+    const b = { ...sample, contattoResourceName: undefined, contattoEmail: undefined };
+    const row = bookingToRow(b);
+    const back = rowToBooking(row);
+    expect(back.contattoResourceName).toBeUndefined();
+    expect(back.contattoEmail).toBeUndefined();
+  });
+  it('BOOKING_HEADERS include i nuovi campi', () => {
+    expect(BOOKING_HEADERS).toContain('contatto_resource_name');
+    expect(BOOKING_HEADERS).toContain('contatto_email');
   });
 });
