@@ -8,6 +8,9 @@ import { ChipGroup } from '../common/ChipGroup';
 import { checkConflicts } from '../../lib/conflicts';
 import { nightsBetween } from '../../lib/date';
 import type { Prenotazione, Camera, Stato, ContattoVia, AnticipoTipo } from '../../types';
+import { toE164 } from '../../lib/phone';
+import { searchByPhone, createContact, ScopeError } from '../../lib/google/people';
+import { ConfirmCreateContactModal } from '../common/ConfirmCreateContactModal';
 
 interface Props { id?: string; prefillCheckin?: string; onClose: () => void; }
 
@@ -26,6 +29,10 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
   const [warn, setWarn] = useState<{ msg: string; block: boolean } | null>(null);
   const ackRef = useRef(false);
   const [antTouched, setAntTouched] = useState(!!existing?.anticipo?.importo);
+  const [pendingConfirm, setPendingConfirm] = useState<{
+    candidate: Prenotazione;
+    e164: string;
+  } | null>(null);
 
   // reset ack quando cambiano dati rilevanti
   useEffect(() => { ackRef.current = false; setWarn(null); },
@@ -47,7 +54,38 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
 
   const nights = data.checkin && data.checkout && data.checkout > data.checkin ? nightsBetween(data.checkin, data.checkout) : 0;
 
-  const onSubmit = (e: FormEvent) => {
+  const finalize = (candidate: Prenotazione) => {
+    const { id: _id, creatoIl: _c, aggiornatoIl: _u, ...rest } = candidate;
+    if (existing) update(existing.id, rest);
+    else add(rest);
+    onClose();
+  };
+
+  const resolveContact = async (candidate: Prenotazione): Promise<Prenotazione> => {
+    if (candidate.contattoVia !== 'telefono' || !candidate.contattoValore) return candidate;
+    const e164 = toE164(candidate.contattoValore);
+    if (!e164) return candidate;
+    const numberChanged = !existing || toE164(existing.contattoValore || '') !== e164;
+    if (!numberChanged && candidate.contattoResourceName) return candidate;
+    try {
+      const match = await searchByPhone(e164);
+      if (match) {
+        return { ...candidate, contattoResourceName: match.resourceName, contattoEmail: match.email };
+      }
+      setPendingConfirm({ candidate, e164 });
+      throw new Error('__PENDING_CONFIRM__');
+    } catch (err) {
+      if (err instanceof Error && err.message === '__PENDING_CONFIRM__') throw err;
+      if (err instanceof ScopeError) {
+        alert('Serve ri-autorizzare l\u2019accesso ai contatti Gmail. Esci e rientra.');
+        return candidate;
+      }
+      console.warn('People lookup failed, saving without contact link', err);
+      return candidate;
+    }
+  };
+
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!data.checkin || !data.checkout || (data.checkout <= data.checkin)) {
       alert('Il check-out deve essere dopo il check-in'); return;
@@ -67,15 +105,20 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
       prezzoTotale: data.prezzoTotale || undefined,
       anticipo: data.anticipo?.importo ? { importo: data.anticipo.importo, data: data.anticipo.data, tipo: data.anticipo.tipo } : undefined,
       note: data.note?.trim() || undefined,
+      contattoResourceName: existing?.contattoResourceName,
+      contattoEmail: existing?.contattoEmail,
     };
     const conf = checkConflicts(candidate, items, closures);
     if (conf?.block) { setWarn(conf); ackRef.current = false; return; }
     if (conf && !ackRef.current) { setWarn(conf); ackRef.current = true; return; }
 
-    const { id: _id, creatoIl: _c, aggiornatoIl: _u, ...rest } = candidate;
-    if (existing) update(existing.id, rest);
-    else add(rest);
-    onClose();
+    try {
+      const resolved = await resolveContact(candidate);
+      finalize(resolved);
+    } catch (err) {
+      if (err instanceof Error && err.message === '__PENDING_CONFIRM__') return;
+      throw err;
+    }
   };
 
   const onDelete = () => {
@@ -85,9 +128,29 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
     onClose();
   };
 
+  const handleConfirmCreate = async () => {
+    if (!pendingConfirm) return;
+    const { candidate, e164 } = pendingConfirm;
+    setPendingConfirm(null);
+    try {
+      const created = await createContact({ name: candidate.nome, phoneE164: e164 });
+      finalize({ ...candidate, contattoResourceName: created.resourceName, contattoEmail: created.email });
+    } catch (err) {
+      console.warn('createContact failed', err);
+      finalize(candidate);
+    }
+  };
+
+  const handleSkipCreate = () => {
+    if (!pendingConfirm) return;
+    const { candidate } = pendingConfirm;
+    setPendingConfirm(null);
+    finalize(candidate);
+  };
+
   return (
     <Modal open onClose={onClose} title={existing ? 'Modifica prenotazione' : 'Nuova prenotazione'}>
-      <form onSubmit={onSubmit} className="p-4">
+      <form onSubmit={(e) => { void onSubmit(e); }} className="p-4">
         <label className="field">
           <span>Camera</span>
           <ChipGroup<Camera>
@@ -160,6 +223,15 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
           </div>
         </div>
       </form>
+        {pendingConfirm && (
+          <ConfirmCreateContactModal
+            open
+            name={pendingConfirm.candidate.nome}
+            phoneE164={pendingConfirm.e164}
+            onConfirm={handleConfirmCreate}
+            onSkip={handleSkipCreate}
+          />
+        )}
     </Modal>
   );
 };
