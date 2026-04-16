@@ -32,3 +32,19 @@ describe('bookings store', () => {
     expect(useBookings.getState().items).toHaveLength(0);
   });
 });
+
+describe('bookings store — contact link persistence', () => {
+  it('update preserva contattoResourceName quando non incluso nella patch', () => {
+    useBookings.setState({ items: [] });
+    const b = useBookings.getState().add({
+      camera: 'lampone', checkin: '2026-05-01', checkout: '2026-05-03',
+      stato: 'confermato', nome: 'Test', numOspiti: 2,
+      contattoVia: 'telefono', contattoValore: '+393351234567',
+      contattoResourceName: 'people/c99', contattoEmail: 'a@b.it',
+    });
+    useBookings.getState().update(b.id, { note: 'ciao' });
+    const updated = useBookings.getState().items.find(x => x.id === b.id);
+    expect(updated?.contattoResourceName).toBe('people/c99');
+    expect(updated?.contattoEmail).toBe('a@b.it');
+  });
+});
