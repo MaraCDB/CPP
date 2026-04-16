@@ -46,15 +46,17 @@ export const ContactMenu = ({ phoneE164, label, email, resourceName, onMissingEm
           style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}
           onClick={(e) => e.stopPropagation()}
         >
-          <a className="block px-3 py-2 rounded hover:bg-gray-100" href={`https://wa.me/${waNumber}`} target="_blank" rel="noreferrer">📱 WhatsApp</a>
-          <a className="block px-3 py-2 rounded hover:bg-gray-100" href={`tel:${phoneE164}`}>📞 Chiama</a>
-          {email && (
-            <a className="block px-3 py-2 rounded hover:bg-gray-100" href={`mailto:${email}`}>✉️ Email</a>
-          )}
+          {[
+            { href: `https://wa.me/${waNumber}`, icon: '📱', text: 'WhatsApp', ext: true },
+            { href: `tel:${phoneE164}`, icon: '📞', text: 'Chiama' },
+            ...(email ? [{ href: `mailto:${email}`, icon: '✉️', text: 'Email' }] : []),
+          ].map(l => (
+            <a key={l.text} className="menu-item" href={l.href} {...(l.ext ? { target: '_blank', rel: 'noreferrer' } : {})}>{l.icon} {l.text}</a>
+          ))}
           {gmailId && (
             <>
               <div className="my-1 border-t" style={{ borderColor: 'var(--line)' }} />
-              <a className="block px-3 py-2 rounded hover:bg-gray-100" href={`https://contacts.google.com/person/${gmailId}`} target="_blank" rel="noreferrer">👤 Apri in Gmail</a>
+              <a className="menu-item" href={`https://contacts.google.com/person/${gmailId}`} target="_blank" rel="noreferrer">👤 Apri in Gmail</a>
             </>
           )}
         </div>

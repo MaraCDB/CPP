@@ -24,6 +24,7 @@ export const BookingCard = ({ b }: { b: Prenotazione }) => {
   const ci = parseISO(b.checkin), co = parseISO(b.checkout);
   const nights = nightsBetween(b.checkin, b.checkout);
   const emoji = b.camera === 'lampone' ? '🍇' : '🫐';
+  const phoneE164 = b.contattoVia === 'telefono' && b.contattoValore ? toE164(b.contattoValore) : null;
 
   return (
     <div className="rounded-xl p-3 mb-2 border cursor-pointer hover:bg-gray-50"
@@ -43,10 +44,10 @@ export const BookingCard = ({ b }: { b: Prenotazione }) => {
           onClick={(e) => e.stopPropagation()}
         >
           <span>{CONTACT_ICON[b.contattoVia]}</span>
-          {b.contattoVia === 'telefono' && toE164(b.contattoValore) ? (
+          {phoneE164 ? (
             <>
               <ContactMenu
-                phoneE164={toE164(b.contattoValore)!}
+                phoneE164={phoneE164}
                 label={b.contattoValore}
                 email={b.contattoEmail}
                 resourceName={b.contattoResourceName}
