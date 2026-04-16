@@ -1,6 +1,8 @@
 import { useUI } from '../../store/ui';
 import { parseISO, nightsBetween } from '../../lib/date';
 import type { Prenotazione } from '../../types';
+import { ContactMenu } from './ContactMenu';
+import { toE164 } from '../../lib/phone';
 
 const STATE_LABEL = { proposta: 'Proposta', anticipo_atteso: 'Anticipo atteso', confermato: 'Confermato' };
 const CONTACT_ICON: Record<string, string> = { telefono: '📞', whatsapp: '💬', mail: '✉️', ota: '🌐' };
@@ -24,9 +26,30 @@ export const BookingCard = ({ b }: { b: Prenotazione }) => {
       <div className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
         {fmt(ci)} → {fmt(co)} · {nights} nott{nights === 1 ? 'e' : 'i'}{b.prezzoTotale ? ` · €${b.prezzoTotale}` : ''}
       </div>
-      {b.contattoVia && <div className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-        {CONTACT_ICON[b.contattoVia]} {b.contattoValore || ''}
-      </div>}
+      {b.contattoVia && b.contattoValore && (
+        <div
+          className="text-[12px] flex items-center gap-1"
+          style={{ color: 'var(--ink-soft)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span>{CONTACT_ICON[b.contattoVia]}</span>
+          {b.contattoVia === 'telefono' && toE164(b.contattoValore) ? (
+            <>
+              <ContactMenu
+                phoneE164={toE164(b.contattoValore)!}
+                label={b.contattoValore}
+                email={b.contattoEmail}
+                resourceName={b.contattoResourceName}
+              />
+              {b.contattoResourceName && (
+                <span title="Contatto Gmail collegato" style={{ color: '#22c55e' }}>●</span>
+              )}
+            </>
+          ) : (
+            <span>{b.contattoValore}</span>
+          )}
+        </div>
+      )}
       {b.anticipo && <div className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
         Anticipo: €{b.anticipo.importo}{b.anticipo.tipo ? ' · ' + b.anticipo.tipo.replace('_', ' ') : ''}{b.anticipo.data ? ' · ' + fmt(parseISO(b.anticipo.data)) : ''}
       </div>}
