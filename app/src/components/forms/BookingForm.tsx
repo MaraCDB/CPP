@@ -21,7 +21,6 @@ const empty = (prefillCheckin?: string): Partial<Prenotazione> => ({
 
 export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
   const readonly = useAuth(s => s.readonly);
-  if (readonly) return null;
   const { items, add, update, remove } = useBookings();
   const closures = useClosures(s => s.items);
   const existing = id ? items.find(b => b.id === id) : undefined;
@@ -48,6 +47,8 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
     }
   }, [data.prezzoTotale, antTouched]);
 
+  if (readonly) return null;
+
   const set = <K extends keyof Prenotazione>(k: K, v: Prenotazione[K]) => setData(d => ({ ...d, [k]: v }));
   const setAnticipo = (patch: Partial<NonNullable<Prenotazione['anticipo']>>) =>
     setData(d => ({ ...d, anticipo: { ...(d.anticipo || { importo: 0 }), ...patch } as Prenotazione['anticipo'] }));
@@ -55,7 +56,7 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
   const nights = data.checkin && data.checkout && data.checkout > data.checkin ? nightsBetween(data.checkin, data.checkout) : 0;
 
   const finalize = (candidate: Prenotazione) => {
-    const { id: _id, creatoIl: _c, aggiornatoIl: _u, ...rest } = candidate;
+    const { id: _id, creatoIl: _c, aggiornatoIl: _u, ...rest } = candidate; // eslint-disable-line @typescript-eslint/no-unused-vars
     if (existing) update(existing.id, rest);
     else add(rest);
     onClose();

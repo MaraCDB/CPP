@@ -8,12 +8,13 @@ interface Props { id?: string; onClose: () => void; }
 
 export const ClosureForm = ({ id, onClose }: Props) => {
   const readonly = useAuth(s => s.readonly);
-  if (readonly) return null;
   const { items, add, update, remove } = useClosures();
   const existing = id ? items.find(c => c.id === id) : undefined;
   const [start, setStart] = useState(existing?.start || '');
   const [end, setEnd] = useState(existing?.end || '');
   const [note, setNote] = useState(existing?.note || '');
+
+  if (readonly) return null;
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();

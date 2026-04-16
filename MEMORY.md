@@ -36,6 +36,19 @@ App directory: `app/`
 - Created `app/tests/lib/google/people.test.ts` — 6 tests, all passing
 - `toE164` from `app/src/lib/phone.ts` returns `string | null` (not `string`) — implementation handles this
 
+### Tasks 8–9 (Apr 15 2026) — Boot warmup and confirmation modal
+- Task 8: `app/src/lib/sync.ts`
+  - Added import: `warmupPeopleSearch` from `./google/people`
+  - Inside `bootSync()`: call `void warmupPeopleSearch()` after `void processQueue()` and before `setInterval` calls
+  - Primes the People API search cache on app boot for faster first search
+- Task 9: Created `app/src/components/common/ConfirmCreateContactModal.tsx`
+  - Component accepts: `open`, `name`, `phoneE164`, `onConfirm`, `onSkip`
+  - Uses `Modal` component with Italian UI: "Aggiungere a rubrica Gmail?"
+  - Buttons: "No, salta" (onSkip) and "Aggiungi a Gmail" (onConfirm)
+- Commits: 12732c4, 079c00e
+- All tests passing (35 tests)
+- TypeScript: zero errors
+
 ---
 
 ## Key Patterns
@@ -47,7 +60,22 @@ App directory: `app/`
 
 ---
 
+### Tasks 13–14 (Apr 15 2026) — Email refresh on demand + test
+
+- Task 13: `app/src/components/common/BookingCard.tsx`
+  - Added imports: `useBookings` from store, `getContact` from people lib
+  - Added `updateBooking` state selector and `fetchEmail` async handler inside component
+  - `fetchEmail` guards: skips if `contattoResourceName` missing or `contattoEmail` already present
+  - Passed `onMissingEmail={fetchEmail}` to `<ContactMenu>` (prop already existed on ContactMenu)
+  - Commit: 536aa43
+- Task 14: `app/tests/store/bookings.test.ts`
+  - Added describe block: 'bookings store — contact link persistence'
+  - Test verifies `contattoResourceName` and `contattoEmail` survive a partial `update()` call
+  - Commit: 8199b2f
+
+---
+
 ## Test Suite Status
 
-- 35 tests across 6 files, all passing (as of Task 7 completion)
+- 40 tests across 7 files, all passing (as of Tasks 13–14 completion)
 - `npx tsc --noEmit` — zero errors
