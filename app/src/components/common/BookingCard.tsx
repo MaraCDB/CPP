@@ -54,7 +54,7 @@ export const BookingCard = ({ b }: { b: Prenotazione }) => {
                 onMissingEmail={fetchEmail}
               />
               {b.contattoResourceName && (
-                <span title="Contatto Gmail collegato" style={{ color: '#22c55e' }}>●</span>
+                <span title="Contatto Gmail collegato" style={{ color: '#22c55e', fontSize: 16, lineHeight: 1 }}>●</span>
               )}
             </>
           ) : (
