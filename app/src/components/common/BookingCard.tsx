@@ -1,8 +1,10 @@
 import { useUI } from '../../store/ui';
+import { useBookings } from '../../store/bookings';
 import { parseISO, nightsBetween } from '../../lib/date';
 import type { Prenotazione } from '../../types';
 import { ContactMenu } from './ContactMenu';
 import { toE164 } from '../../lib/phone';
+import { getContact } from '../../lib/google/people';
 
 const STATE_LABEL = { proposta: 'Proposta', anticipo_atteso: 'Anticipo atteso', confermato: 'Confermato' };
 const CONTACT_ICON: Record<string, string> = { telefono: '📞', whatsapp: '💬', mail: '✉️', ota: '🌐' };
@@ -11,6 +13,14 @@ const fmt = (d: Date) => d.toLocaleDateString('it-IT', { day: 'numeric', month: 
 
 export const BookingCard = ({ b }: { b: Prenotazione }) => {
   const openModal = useUI(s => s.openModal);
+  const updateBooking = useBookings(s => s.update);
+  const fetchEmail = async () => {
+    if (!b.contattoResourceName || b.contattoEmail) return;
+    try {
+      const c = await getContact(b.contattoResourceName);
+      if (c?.email) updateBooking(b.id, { contattoEmail: c.email });
+    } catch { /* ignore */ }
+  };
   const ci = parseISO(b.checkin), co = parseISO(b.checkout);
   const nights = nightsBetween(b.checkin, b.checkout);
   const emoji = b.camera === 'lampone' ? '🍇' : '🫐';
@@ -40,6 +50,7 @@ export const BookingCard = ({ b }: { b: Prenotazione }) => {
                 label={b.contattoValore}
                 email={b.contattoEmail}
                 resourceName={b.contattoResourceName}
+                onMissingEmail={fetchEmail}
               />
               {b.contattoResourceName && (
                 <span title="Contatto Gmail collegato" style={{ color: '#22c55e' }}>●</span>
