@@ -1,6 +1,7 @@
 import { readRange, writeRange, clearRange } from './google/sheets';
 import { getFileMetadata } from './google/drive';
 import { getOrCreateSheet } from './google/bootstrap';
+import { warmupPeopleSearch } from './google/people';
 import {
   bookingToRow, rowToBooking, closureToRow, rowToClosure, promemoriaToRow, rowToPromemoria,
 } from './google/adapter';
@@ -112,6 +113,7 @@ export const bootSync = async () => {
   useAuth.getState().setReadonly(!meta.capabilities.canEdit);
   await fullPull();
   void processQueue();
+  void warmupPeopleSearch();
   setInterval(() => void fullPull(), 60_000);
   setInterval(() => void processQueue(), 3_000);
   window.addEventListener('online', () => { useSync.getState().setStatus('idle'); void processQueue(); });
