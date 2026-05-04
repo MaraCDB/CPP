@@ -1,13 +1,15 @@
 import { createSpreadsheet, writeRange } from './sheets';
 import { listCdbSheets } from './drive';
-import { BOOKING_HEADERS, CLOSURE_HEADERS, PROMEMORIA_HEADERS } from './adapter';
+import { BOOKING_HEADERS, CLOSURE_HEADERS, PROMEMORIA_HEADERS, TASK_HEADERS, TEMPLATE_HEADERS } from './adapter';
 
-export const SHEET_NAMES = ['prenotazioni','chiusure','promemoria','impostazioni'];
+export const SHEET_NAMES = ['prenotazioni','chiusure','promemoria','tasks','reminder_templates','impostazioni'];
 
 const ensureHeaders = async (sid: string) => {
   await writeRange(sid, 'prenotazioni!A1', [ [...BOOKING_HEADERS] ]);
   await writeRange(sid, 'chiusure!A1', [ [...CLOSURE_HEADERS] ]);
   await writeRange(sid, 'promemoria!A1', [ [...PROMEMORIA_HEADERS] ]);
+  await writeRange(sid, 'tasks!A1', [ [...TASK_HEADERS] ]);
+  await writeRange(sid, 'reminder_templates!A1', [ [...TEMPLATE_HEADERS] ]);
 };
 
 export const getOrCreateSheet = async (): Promise<string> => {
