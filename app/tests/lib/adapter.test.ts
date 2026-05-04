@@ -89,3 +89,31 @@ describe('task adapter round-trip', () => {
     expect(back.templateId).toBeNull();
   });
 });
+
+import { templateToRow, rowToTemplate, TEMPLATE_HEADERS } from '../../src/lib/google/adapter';
+import type { ReminderTemplate } from '../../src/types';
+
+describe('template adapter round-trip', () => {
+  it('header ha 12 colonne', () => {
+    expect(TEMPLATE_HEADERS).toHaveLength(12);
+  });
+  it('round-trip preserva tutti i campi', () => {
+    const original: ReminderTemplate = {
+      id: 'merenda', builtIn: true, enabled: true,
+      title: 'Preparare merenda', description: 'desc',
+      isService: true, serviceLabel: 'Merenda',
+      anchor: 'check-in', offsetDays: 0,
+      defaultTime: '16:30', notify: true, sortOrder: 50,
+    };
+    const back = rowToTemplate(templateToRow(original));
+    expect(back).toEqual(original);
+  });
+  it('offsetDays negativo round-trip', () => {
+    const t: ReminderTemplate = {
+      id: 'p', builtIn: true, enabled: true, title: 'X',
+      isService: false, anchor: 'check-in', offsetDays: -2,
+      defaultTime: '14:00', notify: true, sortOrder: 1,
+    };
+    expect(rowToTemplate(templateToRow(t)).offsetDays).toBe(-2);
+  });
+});

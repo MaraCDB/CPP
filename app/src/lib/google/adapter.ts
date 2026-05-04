@@ -1,4 +1,4 @@
-import type { Prenotazione, Chiusura, Promemoria, Camera, Stato, ContattoVia, AnticipoTipo, BookingTask, NotificationStatus } from '../../types';
+import type { Prenotazione, Chiusura, Promemoria, Camera, Stato, ContattoVia, AnticipoTipo, BookingTask, NotificationStatus, ReminderTemplate, TemplateAnchor } from '../../types';
 
 export const BOOKING_HEADERS = [
   'id','camera','checkin','checkout','stato','nome','riferimento','num_ospiti',
@@ -97,4 +97,40 @@ export const rowToTask = (r: string[]): BookingTask => ({
   createdAt: r[13],
   updatedAt: r[14],
   deletedAt: r[15] || undefined,
+});
+
+export const TEMPLATE_HEADERS = [
+  'id','built_in','enabled','title','description',
+  'is_service','service_label','anchor','offset_days',
+  'default_time','notify','sort_order',
+] as const;
+
+export const templateToRow = (t: ReminderTemplate): string[] => [
+  t.id,
+  optB(t.builtIn),
+  optB(t.enabled),
+  t.title,
+  opt(t.description),
+  optB(t.isService),
+  opt(t.serviceLabel),
+  t.anchor,
+  String(t.offsetDays),
+  t.defaultTime,
+  optB(t.notify),
+  String(t.sortOrder),
+];
+
+export const rowToTemplate = (r: string[]): ReminderTemplate => ({
+  id: r[0],
+  builtIn: isTrue(r[1]),
+  enabled: isTrue(r[2]),
+  title: r[3],
+  description: r[4] || undefined,
+  isService: isTrue(r[5]),
+  serviceLabel: r[6] || undefined,
+  anchor: r[7] as TemplateAnchor,
+  offsetDays: Number(r[8]),
+  defaultTime: r[9],
+  notify: isTrue(r[10]),
+  sortOrder: Number(r[11]),
 });
