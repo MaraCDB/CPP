@@ -133,6 +133,7 @@ type BookingTask = {
 - Cambio data check-in/out → ricalcola `dueAt` di tutti i task con `templateId != null` e `done: false`
 - Cambio adulti/bambini → ricalcola `title` dei task con placeholder corrispondenti
 - Cambio orario di un servizio → ricalcola `dueAt` del task corrispondente
+- Task custom (`templateId === null`) NON vengono mai ricalcolati automaticamente
 
 **Cancellazione booking:** soft-delete dei task (campo `deletedAt`); le notifiche schedulate vengono cancellate.
 
@@ -225,8 +226,8 @@ Stato in store: `notificationsPermission: 'default' | 'granted' | 'denied'`.
 
 ### Compromessi accettati
 
-- Notifiche del giorno stesso a orario specifico (es. merenda 16:30) con app chiusa: arrivano al prossimo tick di Periodic Sync, quindi entro qualche ora di ritardo
-- Per i promemoria mattutini (camera, ISTAT, check-in oggi): `defaultTime: '00:00'` o `'08:00'` → arrivano la mattina al primo sblocco del telefono
+- Notifiche con orario specifico (es. merenda 16:30, check-in oggi 09:00) con app chiusa: arrivano al prossimo tick di Periodic Sync, quindi entro qualche ora di ritardo dall'orario `dueAt`
+- Strategia di mitigazione: settando `defaultTime` un po' prima dell'orario "ideale" (es. `08:00` per "check-in oggi") si massimizza la probabilità che il primo tick mattutino dell'utente intercetti la notifica al momento giusto. I `defaultTime` dei template sono editabili dall'utente in Impostazioni
 - L'app DEVE essere installata come PWA per attivare Periodic Sync
 
 ---
@@ -302,7 +303,7 @@ Promemoria
 - Bottone "+ Nuovo template" per template custom (editabile completamente)
 - Toggle `enabled` per disattivare senza cancellare
 - Editor con preview dei placeholder ("Prepara camera per 2A 1B")
-- Bottone una-tantum "Genera promemoria per booking esistenti"
+- Bottone una-tantum "Genera promemoria per booking esistenti" (idempotente: skippa booking che hanno già almeno un task)
 - I template editati NON sono retroattivi: solo i nuovi booking li usano
 
 ### NotificationOnboarding banner
@@ -381,7 +382,7 @@ Last-write-wins sul range completo (full-replace), coerente col pattern esistent
 
 ### Cosa NON sincronizziamo
 
-`notificationStatus` rimane locale per device. `taskToRow` lo serializza sempre come `'pending'`, `rowToTask` lo legge sempre come `'pending'`. Lo stato vero vive solo in IndexedDB locale.
+`notificationStatus` e `notificationShownAt` rimangono locali per device. In serializzazione: `taskToRow` scrive sempre `notificationStatus = 'pending'` e `notificationShownAt = ''` indipendentemente dal valore in memoria; `rowToTask` ignora quei campi dal foglio e setta `'pending'` / `undefined`. Lo stato vero vive solo in IndexedDB locale.
 
 ---
 
