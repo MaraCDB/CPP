@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { checkConflicts, overlaps } from '../../src/lib/conflicts';
-import type { Prenotazione, Chiusura } from '../../src/types';
+import type { Prenotazione, Chiusura, Stato } from '../../src/types';
 
-const mk = (id: string, camera: 'lampone'|'mirtillo', checkin: string, checkout: string, stato: any = 'confermato', nome = 'X'): Prenotazione => ({
+const mk = (id: string, camera: 'lampone'|'mirtillo', checkin: string, checkout: string, stato: Stato = 'confermato', nome = 'X'): Prenotazione => ({
   id, camera, checkin, checkout, stato, nome, creatoIl: '2026-01-01T00:00:00', aggiornatoIl: '2026-01-01T00:00:00',
 });
 

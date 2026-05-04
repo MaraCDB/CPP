@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { useAuth } from '../../../src/store/auth';
 import { searchByPhone, createContact, ScopeError } from '../../../src/lib/google/people';
 
-const mockFetch = (responses: Array<{ ok: boolean; status?: number; body: any }>) => {
+const mockFetch = (responses: Array<{ ok: boolean; status?: number; body: unknown }>) => {
   let i = 0;
   return vi.fn(async () => {
     const r = responses[i++];
@@ -17,7 +17,7 @@ const mockFetch = (responses: Array<{ ok: boolean; status?: number; body: any }>
 
 describe('people API', () => {
   beforeEach(() => {
-    useAuth.setState({ accessToken: 'fake-token', tokenExpiry: Date.now() + 3600_000 } as any);
+    useAuth.setState({ accessToken: 'fake-token', tokenExpiry: Date.now() + 3600_000 } as Parameters<typeof useAuth.setState>[0]);
   });
   afterEach(() => vi.restoreAllMocks());
 

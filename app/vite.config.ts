@@ -7,9 +7,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
-      workbox: {
-        navigateFallbackDenylist: [/^\/api/, /googleapis\.com/, /accounts\.google\.com/],
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
       },
       includeAssets: ['favicon.svg', 'icon.svg'],
