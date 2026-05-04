@@ -1,14 +1,21 @@
 import { openDB, type IDBPDatabase } from 'idb';
 
 const DB = 'cdb_cache';
-const VERSION = 1;
+const VERSION = 2;
 
 let dbP: Promise<IDBPDatabase> | null = null;
 const db = () => dbP ??= openDB(DB, VERSION, {
-  upgrade(d) {
-    ['bookings','closures','promemoria','settings'].forEach(s => {
-      if (!d.objectStoreNames.contains(s)) d.createObjectStore(s);
-    });
+  upgrade(d, oldVersion) {
+    if (oldVersion < 1) {
+      ['bookings','closures','promemoria','settings'].forEach(s => {
+        if (!d.objectStoreNames.contains(s)) d.createObjectStore(s);
+      });
+    }
+    if (oldVersion < 2) {
+      ['tasks','templates'].forEach(s => {
+        if (!d.objectStoreNames.contains(s)) d.createObjectStore(s);
+      });
+    }
   },
 });
 
