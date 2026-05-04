@@ -1,4 +1,4 @@
-import type { Prenotazione, Chiusura, Promemoria, Camera, Stato, ContattoVia, AnticipoTipo } from '../../types';
+import type { Prenotazione, Chiusura, Promemoria, Camera, Stato, ContattoVia, AnticipoTipo, BookingTask, NotificationStatus } from '../../types';
 
 export const BOOKING_HEADERS = [
   'id','camera','checkin','checkout','stato','nome','riferimento','num_ospiti',
@@ -49,4 +49,52 @@ export const rowToClosure = (r: string[]): Chiusura => ({
 export const promemoriaToRow = (p: Promemoria): string[] => [p.id, p.testo, p.createdAt, p.done ? '1' : '0'];
 export const rowToPromemoria = (r: string[]): Promemoria => ({
   id: r[0], testo: r[1], createdAt: r[2], done: r[3] === '1',
+});
+
+export const TASK_HEADERS = [
+  'id', 'booking_id', 'template_id', 'title', 'description',
+  'due_at', 'done', 'done_at', 'notes', 'notify',
+  'notification_status', 'notification_shown_at', 'is_service',
+  'created_at', 'updated_at', 'deleted_at',
+] as const;
+
+const optB = (v: boolean | undefined) => v ? 'TRUE' : 'FALSE';
+const isTrue = (v: string | undefined) => v === 'TRUE' || v === 'true' || v === '1';
+
+export const taskToRow = (t: BookingTask): string[] => [
+  t.id,
+  t.bookingId,
+  t.templateId ?? '',
+  t.title,
+  opt(t.description),
+  t.dueAt,
+  optB(t.done),
+  opt(t.doneAt),
+  opt(t.notes),
+  optB(t.notify),
+  'pending',          // notificationStatus NON sincronizzato (sempre 'pending')
+  '',                 // notificationShownAt NON sincronizzato
+  optB(t.isService),
+  t.createdAt,
+  t.updatedAt,
+  opt(t.deletedAt),
+];
+
+export const rowToTask = (r: string[]): BookingTask => ({
+  id: r[0],
+  bookingId: r[1],
+  templateId: r[2] || null,
+  title: r[3],
+  description: r[4] || undefined,
+  dueAt: r[5],
+  done: isTrue(r[6]),
+  doneAt: r[7] || undefined,
+  notes: r[8] || undefined,
+  notify: isTrue(r[9]),
+  notificationStatus: 'pending' as NotificationStatus,
+  notificationShownAt: undefined,
+  isService: isTrue(r[12]),
+  createdAt: r[13],
+  updatedAt: r[14],
+  deletedAt: r[15] || undefined,
 });

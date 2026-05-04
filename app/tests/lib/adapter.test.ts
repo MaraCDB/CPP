@@ -41,3 +41,51 @@ describe('adapter', () => {
     expect(BOOKING_HEADERS).toContain('contatto_email');
   });
 });
+
+import { taskToRow, rowToTask, TASK_HEADERS } from '../../src/lib/google/adapter';
+import type { BookingTask } from '../../src/types';
+
+describe('task adapter round-trip', () => {
+  it('header ha 16 colonne', () => {
+    expect(TASK_HEADERS).toHaveLength(16);
+  });
+  it('round-trip preserva tutti i campi (eccetto notificationStatus che torna pending)', () => {
+    const original: BookingTask = {
+      id: 't1', bookingId: 'b1', templateId: 'preparation',
+      title: 'Prepara', description: 'desc', dueAt: '2026-05-09T14:00:00.000Z',
+      done: true, doneAt: '2026-05-09T15:00:00.000Z', notes: 'note',
+      notify: true, notificationStatus: 'shown', notificationShownAt: '2026-05-09T14:00:00.000Z',
+      isService: false,
+      createdAt: '2026-05-04T10:00:00.000Z', updatedAt: '2026-05-04T11:00:00.000Z',
+      deletedAt: undefined,
+    };
+    const row = taskToRow(original);
+    const back = rowToTask(row);
+    expect(back.id).toBe('t1');
+    expect(back.bookingId).toBe('b1');
+    expect(back.templateId).toBe('preparation');
+    expect(back.title).toBe('Prepara');
+    expect(back.description).toBe('desc');
+    expect(back.dueAt).toBe('2026-05-09T14:00:00.000Z');
+    expect(back.done).toBe(true);
+    expect(back.doneAt).toBe('2026-05-09T15:00:00.000Z');
+    expect(back.notes).toBe('note');
+    expect(back.notify).toBe(true);
+    // notificationStatus / shownAt: NON sincronizzati, sempre pending/undefined
+    expect(back.notificationStatus).toBe('pending');
+    expect(back.notificationShownAt).toBeUndefined();
+    expect(back.isService).toBe(false);
+    expect(back.createdAt).toBe('2026-05-04T10:00:00.000Z');
+    expect(back.updatedAt).toBe('2026-05-04T11:00:00.000Z');
+  });
+  it('templateId vuoto torna null', () => {
+    const t: BookingTask = {
+      id: 'x', bookingId: 'b1', templateId: null,
+      title: 'Custom', dueAt: '2026-05-09T14:00:00.000Z',
+      done: false, notify: true, notificationStatus: 'pending', isService: false,
+      createdAt: '2026-05-04T10:00:00.000Z', updatedAt: '2026-05-04T11:00:00.000Z',
+    };
+    const back = rowToTask(taskToRow(t));
+    expect(back.templateId).toBeNull();
+  });
+});
