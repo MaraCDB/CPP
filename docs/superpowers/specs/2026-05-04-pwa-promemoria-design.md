@@ -73,7 +73,7 @@ Trasformare l'app Cuore di Bosco in una PWA installabile con notifiche locali pr
 ```ts
 type ReminderTemplate = {
   id: string;                       // 'preparation' | 'documents' | 'istat-questura' | 'check-in-today' | 'merenda' | 'cena' | <uuid>
-  builtIn: boolean;                 // true per i 6 default seedati
+  builtIn: boolean;                 // true per i 9 default seedati
   enabled: boolean;                 // se false, non viene applicato ai nuovi booking
   title: string;                    // "Prepara camera", supporta placeholder {adulti} {bambini} {oraArrivo}
   description?: string;             // opzionale, supporta placeholder
@@ -87,13 +87,16 @@ type ReminderTemplate = {
 };
 ```
 
-**6 template default** seedati al primo avvio:
+**9 template default** seedati al primo avvio:
 
 | id | title | anchor | offsetDays | defaultTime | isService |
 |---|---|---|---|---|---|
-| `preparation` | "Prepara camera per {adulti}A {bambini}B" | check-in | -1 | 18:00 | no |
-| `check-in-today` | "Check-in oggi alle {oraArrivo}" | check-in | 0 | 09:00 | no |
+| `preparation` | "Prepara camera per {adulti}A {bambini}B" | check-in | -1 | 14:00 | no |
+| `check-in-today` | "Check-in oggi alle {oraArrivo}" | check-in | 0 | 00:00 | no |
 | `documents` | "Registra documenti Alloggiati Web" | check-in | 0 | 21:00 | no |
+| `receipt-issue` | "Emetti ricevuta" | check-in | 0 | 21:00 | no |
+| `receipt-print` | "Stampa copia ricevuta" | check-in | 0 | 21:00 | no |
+| `tourism-tax` | "Registro tassa di soggiorno" | check-in | 0 | 21:00 | no |
 | `istat-questura` | "ISTAT + scarica ricevuta questura" | check-in | +2 | 10:00 | no |
 | `merenda` | "Preparare merenda" | check-in | 0 | (per booking) | sì |
 | `cena` | "Preparare cena" | check-in | 0 | (per booking) | sì |
@@ -253,7 +256,7 @@ Lista di card per i task non-servizio:
 ```
 ┌─────────────────────────────────────────────┐
 │ ☐ Prepara camera per 2A 1B                  │
-│   📅 lun 5 mag · 18:00                      │
+│   📅 dom 4 mag · 14:00                      │
 │   📝 Note (espandibile)                     │
 │   ✏️  Modifica  ⓧ Disattiva                 │
 └─────────────────────────────────────────────┘
@@ -287,8 +290,12 @@ Lista in sola lettura con check rapido:
 ```
 Promemoria
 ─────────
-☐ Prepara camera per 2A 1B          dom 18:00
+☐ Prepara camera per 2A 1B          dom 14:00
+☑ Check-in oggi alle 15:30          lun 00:00 ✓
 ☑ Documenti Alloggiati Web          lun 21:00 ✓
+☐ Emetti ricevuta                   lun 21:00
+☐ Stampa copia ricevuta             lun 21:00
+☐ Registro tassa di soggiorno       lun 21:00
 ☐ ISTAT + ricevuta questura         mer 10:00
 ☑ Cena                              lun 19:30 ✓
 [modifica]
@@ -299,7 +306,7 @@ Promemoria
 
 ### Pagina Impostazioni — "Promemoria e template"
 
-- Lista dei 6 template default (anchor/offset read-only, ma editabili: title, defaultTime, enabled, notify, isService, serviceLabel)
+- Lista dei 9 template default (anchor/offset read-only, ma editabili: title, defaultTime, enabled, notify, isService, serviceLabel)
 - Bottone "+ Nuovo template" per template custom (editabile completamente)
 - Toggle `enabled` per disattivare senza cancellare
 - Editor con preview dei placeholder ("Prepara camera per 2A 1B")
@@ -374,7 +381,7 @@ Bottoni: "Attiva promemoria" / "Più tardi" / "Non chiedere più".
 ### Bootstrap
 
 - `bootstrap.ts` esteso per creare automaticamente i due sheet con headers se mancanti (idempotente)
-- Al primo flush, i 6 default seed di `useTemplates` vanno su `reminder_templates`
+- Al primo flush, i 9 default seed di `useTemplates` vanno su `reminder_templates`
 
 ### Conflitti
 
@@ -438,7 +445,7 @@ Ogni fase è autonomamente rilasciabile e ha test propri.
 - Tipi `BookingTask`, `ReminderTemplate` in `src/types.ts`
 - Slice `useTasks`, `useTemplates`
 - IndexedDB mirror via middleware Zustand
-- Seed dei 6 template default
+- Seed dei 9 template default
 - Logica pura (`materializeTasks`, `recalculateDueAt`, `resolvePlaceholders`)
 - Test: unit Vitest
 
