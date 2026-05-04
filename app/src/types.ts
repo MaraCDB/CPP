@@ -60,7 +60,50 @@ export type SyncStatus = 'idle' | 'syncing' | 'offline' | 'error' | 'unauth';
 
 export interface PendingOp {
   id: string;
-  kind: 'upsert_booking' | 'delete_booking' | 'upsert_closure' | 'delete_closure' | 'upsert_promemoria' | 'delete_promemoria';
+  kind:
+    | 'upsert_booking' | 'delete_booking'
+    | 'upsert_closure' | 'delete_closure'
+    | 'upsert_promemoria' | 'delete_promemoria'
+    | 'upsert_task' | 'delete_task'
+    | 'upsert_template' | 'delete_template';
   payload: unknown;
   createdAt: string;
+}
+
+export type TemplateAnchor = 'check-in' | 'check-out';
+
+export interface ReminderTemplate {
+  id: string;
+  builtIn: boolean;
+  enabled: boolean;
+  title: string;
+  description?: string;
+  isService: boolean;
+  serviceLabel?: string;
+  anchor: TemplateAnchor;
+  offsetDays: number;
+  defaultTime: string; // 'HH:mm'
+  notify: boolean;
+  sortOrder: number;
+}
+
+export type NotificationStatus = 'pending' | 'shown' | 'dismissed' | 'failed';
+
+export interface BookingTask {
+  id: string;
+  bookingId: string;
+  templateId: string | null;
+  title: string;
+  description?: string;
+  dueAt: string; // ISO local datetime
+  done: boolean;
+  doneAt?: string;
+  notes?: string;
+  notify: boolean;
+  notificationStatus: NotificationStatus;
+  notificationShownAt?: string;
+  isService: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
 }
