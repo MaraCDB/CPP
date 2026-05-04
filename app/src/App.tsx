@@ -7,6 +7,10 @@ import { SignIn } from './components/SignIn';
 import { InstallPrompt } from './components/InstallPrompt';
 import { initAuth, startTokenAutoRefresh } from './lib/google/auth';
 import { bootSync } from './lib/sync';
+import { useTemplates } from './store/templates';
+import { useTasks } from './store/tasks';
+import { idbGet } from './lib/idb';
+import type { BookingTask } from './types';
 
 export default function App() {
   const user = useAuth(s => s.user);
@@ -14,6 +18,10 @@ export default function App() {
 
   useEffect(() => {
     void initAuth().then(startTokenAutoRefresh);
+    useTemplates.getState().seedDefaults();
+    void idbGet<BookingTask[]>('tasks', 'all').then(arr => {
+      if (arr) useTasks.setState({ items: arr });
+    });
   }, []);
 
   useEffect(() => {
