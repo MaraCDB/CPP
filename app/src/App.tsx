@@ -5,6 +5,7 @@ import { Home } from './components/Home';
 import { CalendarPage } from './components/calendar/CalendarPage';
 import { SignIn } from './components/SignIn';
 import { InstallPrompt } from './components/InstallPrompt';
+import { NotificationOnboarding } from './components/NotificationOnboarding';
 import { initAuth, startTokenAutoRefresh } from './lib/google/auth';
 import { bootSync } from './lib/sync';
 import { useTemplates } from './store/templates';
@@ -88,6 +89,7 @@ export default function App() {
   return (
     <>
       <InstallPrompt />
+      <NotificationOnboarding />
       {page === 'home' ? <Home /> : <CalendarPage />}
     </>
   );
