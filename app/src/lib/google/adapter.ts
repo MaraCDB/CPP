@@ -1,9 +1,9 @@
-import type { Prenotazione, Chiusura, Promemoria, Camera, Stato, ContattoVia, AnticipoTipo } from '../../types';
+import type { Prenotazione, Chiusura, Promemoria, Camera, Stato, ContattoVia, AnticipoTipo, BookingTask, NotificationStatus, ReminderTemplate, TemplateAnchor } from '../../types';
 
 export const BOOKING_HEADERS = [
   'id','camera','checkin','checkout','stato','nome','riferimento','num_ospiti',
   'contatto_via','contatto_valore','prezzo_totale','anticipo_importo','anticipo_data','anticipo_tipo',
-  'note','creato_il','aggiornato_il',
+  'note','contatto_resource_name','contatto_email','creato_il','aggiornato_il',
 ] as const;
 
 export const CLOSURE_HEADERS = ['id','start','end','note'] as const;
@@ -16,7 +16,8 @@ export const bookingToRow = (b: Prenotazione): string[] => [
   b.id, b.camera, b.checkin, b.checkout, b.stato, b.nome, opt(b.riferimento), optN(b.numOspiti),
   opt(b.contattoVia), opt(b.contattoValore), optN(b.prezzoTotale),
   optN(b.anticipo?.importo), opt(b.anticipo?.data), opt(b.anticipo?.tipo),
-  opt(b.note), b.creatoIl, b.aggiornatoIl,
+  opt(b.note), opt(b.contattoResourceName), opt(b.contattoEmail),
+  b.creatoIl, b.aggiornatoIl,
 ];
 
 export const rowToBooking = (r: string[]): Prenotazione => {
@@ -34,7 +35,9 @@ export const rowToBooking = (r: string[]): Prenotazione => {
       tipo: (r[13] || undefined) as AnticipoTipo | undefined,
     } : undefined,
     note: r[14] || undefined,
-    creatoIl: r[15], aggiornatoIl: r[16],
+    contattoResourceName: r[15] || undefined,
+    contattoEmail: r[16] || undefined,
+    creatoIl: r[17], aggiornatoIl: r[18],
   };
 };
 
@@ -46,4 +49,88 @@ export const rowToClosure = (r: string[]): Chiusura => ({
 export const promemoriaToRow = (p: Promemoria): string[] => [p.id, p.testo, p.createdAt, p.done ? '1' : '0'];
 export const rowToPromemoria = (r: string[]): Promemoria => ({
   id: r[0], testo: r[1], createdAt: r[2], done: r[3] === '1',
+});
+
+export const TASK_HEADERS = [
+  'id', 'booking_id', 'template_id', 'title', 'description',
+  'due_at', 'done', 'done_at', 'notes', 'notify',
+  'notification_status', 'notification_shown_at', 'is_service',
+  'created_at', 'updated_at', 'deleted_at',
+] as const;
+
+const optB = (v: boolean | undefined) => v ? 'TRUE' : 'FALSE';
+const isTrue = (v: string | undefined) => v === 'TRUE' || v === 'true' || v === '1';
+
+export const taskToRow = (t: BookingTask): string[] => [
+  t.id,
+  t.bookingId,
+  t.templateId ?? '',
+  t.title,
+  opt(t.description),
+  t.dueAt,
+  optB(t.done),
+  opt(t.doneAt),
+  opt(t.notes),
+  optB(t.notify),
+  'pending',          // notificationStatus NON sincronizzato (sempre 'pending')
+  '',                 // notificationShownAt NON sincronizzato
+  optB(t.isService),
+  t.createdAt,
+  t.updatedAt,
+  opt(t.deletedAt),
+];
+
+export const rowToTask = (r: string[]): BookingTask => ({
+  id: r[0],
+  bookingId: r[1],
+  templateId: r[2] || null,
+  title: r[3],
+  description: r[4] || undefined,
+  dueAt: r[5],
+  done: isTrue(r[6]),
+  doneAt: r[7] || undefined,
+  notes: r[8] || undefined,
+  notify: isTrue(r[9]),
+  notificationStatus: 'pending' as NotificationStatus,
+  notificationShownAt: undefined,
+  isService: isTrue(r[12]),
+  createdAt: r[13],
+  updatedAt: r[14],
+  deletedAt: r[15] || undefined,
+});
+
+export const TEMPLATE_HEADERS = [
+  'id','built_in','enabled','title','description',
+  'is_service','service_label','anchor','offset_days',
+  'default_time','notify','sort_order',
+] as const;
+
+export const templateToRow = (t: ReminderTemplate): string[] => [
+  t.id,
+  optB(t.builtIn),
+  optB(t.enabled),
+  t.title,
+  opt(t.description),
+  optB(t.isService),
+  opt(t.serviceLabel),
+  t.anchor,
+  String(t.offsetDays),
+  t.defaultTime,
+  optB(t.notify),
+  String(t.sortOrder),
+];
+
+export const rowToTemplate = (r: string[]): ReminderTemplate => ({
+  id: r[0],
+  builtIn: isTrue(r[1]),
+  enabled: isTrue(r[2]),
+  title: r[3],
+  description: r[4] || undefined,
+  isService: isTrue(r[5]),
+  serviceLabel: r[6] || undefined,
+  anchor: r[7] as TemplateAnchor,
+  offsetDays: Number(r[8]),
+  defaultTime: r[9],
+  notify: isTrue(r[10]),
+  sortOrder: Number(r[11]),
 });

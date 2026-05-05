@@ -1,6 +1,11 @@
 import { useUI } from '../../store/ui';
+import { useBookings } from '../../store/bookings';
 import { parseISO, nightsBetween } from '../../lib/date';
 import type { Prenotazione } from '../../types';
+import { ContactMenu } from './ContactMenu';
+import { toE164 } from '../../lib/phone';
+import { getContact } from '../../lib/google/people';
+import { useTasks } from '../../store/tasks';
 
 const STATE_LABEL = { proposta: 'Proposta', anticipo_atteso: 'Anticipo atteso', confermato: 'Confermato' };
 const CONTACT_ICON: Record<string, string> = { telefono: '📞', whatsapp: '💬', mail: '✉️', ota: '🌐' };
@@ -9,9 +14,29 @@ const fmt = (d: Date) => d.toLocaleDateString('it-IT', { day: 'numeric', month: 
 
 export const BookingCard = ({ b }: { b: Prenotazione }) => {
   const openModal = useUI(s => s.openModal);
+  const updateBooking = useBookings(s => s.update);
+  const fetchEmail = async () => {
+    if (!b.contattoResourceName || b.contattoEmail) return;
+    try {
+      const c = await getContact(b.contattoResourceName);
+      if (c?.email) updateBooking(b.id, { contattoEmail: c.email });
+    } catch { /* ignore */ }
+  };
   const ci = parseISO(b.checkin), co = parseISO(b.checkout);
   const nights = nightsBetween(b.checkin, b.checkout);
   const emoji = b.camera === 'lampone' ? '🍇' : '🫐';
+  const phoneE164 = b.contattoVia === 'telefono' && b.contattoValore ? toE164(b.contattoValore) : null;
+
+  const tasks = useTasks(s => s.byBooking(b.id));
+  const totalActive = tasks.filter(t => t.notify);
+  const doneCount = totalActive.filter(t => t.done).length;
+  const upcoming = totalActive
+    .filter(t => !t.done)
+    .sort((x, y) => x.dueAt.localeCompare(y.dueAt))[0];
+  const allDone = totalActive.length > 0 && doneCount === totalActive.length;
+  const nowMs = new Date().getTime();
+  const overdue = upcoming ? new Date(upcoming.dueAt).getTime() < nowMs : false;
+  const indicatorColor = allDone ? '#22c55e' : (overdue ? '#f59e0b' : 'var(--ink-soft)');
 
   return (
     <div className="rounded-xl p-3 mb-2 border cursor-pointer hover:bg-gray-50"
@@ -24,13 +49,46 @@ export const BookingCard = ({ b }: { b: Prenotazione }) => {
       <div className="text-[13px]" style={{ color: 'var(--ink-soft)' }}>
         {fmt(ci)} → {fmt(co)} · {nights} nott{nights === 1 ? 'e' : 'i'}{b.prezzoTotale ? ` · €${b.prezzoTotale}` : ''}
       </div>
-      {b.contattoVia && <div className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
-        {CONTACT_ICON[b.contattoVia]} {b.contattoValore || ''}
-      </div>}
+      {b.contattoVia && b.contattoValore && (
+        <div
+          className="text-[12px] flex items-center gap-1"
+          style={{ color: 'var(--ink-soft)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span>{CONTACT_ICON[b.contattoVia]}</span>
+          {phoneE164 ? (
+            <>
+              <ContactMenu
+                phoneE164={phoneE164}
+                label={b.contattoValore}
+                email={b.contattoEmail}
+                resourceName={b.contattoResourceName}
+                onMissingEmail={fetchEmail}
+              />
+              {b.contattoResourceName && (
+                <span title="Contatto Gmail collegato" style={{ color: '#22c55e', fontSize: 16, lineHeight: 1 }}>●</span>
+              )}
+            </>
+          ) : (
+            <span>{b.contattoValore}</span>
+          )}
+        </div>
+      )}
       {b.anticipo && <div className="text-[12px]" style={{ color: 'var(--ink-soft)' }}>
         Anticipo: €{b.anticipo.importo}{b.anticipo.tipo ? ' · ' + b.anticipo.tipo.replace('_', ' ') : ''}{b.anticipo.data ? ' · ' + fmt(parseISO(b.anticipo.data)) : ''}
       </div>}
       {b.note && <div className="text-[12px] italic mt-1" style={{ color: 'var(--ink-soft)' }}>« {b.note} »</div>}
+      {totalActive.length > 0 && (
+        <div className="text-[11px] mt-1 flex items-center gap-1" style={{ color: indicatorColor }}>
+          <span>●</span>
+          <span>{doneCount}/{totalActive.length} fatti</span>
+          {upcoming && !allDone && (
+            <span style={{ color: 'var(--ink-soft)' }}>
+              · prossimo: {new Date(upcoming.dueAt).toLocaleString('it-IT', { weekday: 'short', hour: '2-digit', minute: '2-digit' })} {upcoming.title.slice(0, 30)}{upcoming.title.length > 30 ? '…' : ''}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

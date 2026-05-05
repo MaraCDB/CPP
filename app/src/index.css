@@ -249,6 +249,10 @@
   .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line-strong)}
   .btn-danger{background:var(--danger);color:#fff}
 
+  /* ============ MENU ITEMS ============ */
+  .menu-item{display:block;padding:8px 12px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:14px}
+  .menu-item:hover{background:var(--surface-2)}
+
   /* ============ SIDE PANEL ============ */
   .side{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--card);box-shadow:-10px 0 30px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .25s;z-index:40;overflow-y:auto}
   .side.open{transform:translateX(0)}

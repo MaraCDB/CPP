@@ -4,14 +4,33 @@ const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
 const SCOPES = [
   'https://www.googleapis.com/auth/spreadsheets',
   'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/contacts',
   'openid', 'email', 'profile',
 ].join(' ');
 
-declare global {
-  interface Window { google?: any; }
+interface TokenResponse {
+  error?: string;
+  access_token: string;
+  expires_in?: number;
 }
 
-let tokenClient: any = null;
+interface TokenClient {
+  requestAccessToken: (opts: { prompt: string }) => void;
+}
+
+interface GoogleOAuth2 {
+  initTokenClient: (config: {
+    client_id: string;
+    scope: string;
+    callback: (resp: TokenResponse) => void;
+  }) => TokenClient;
+}
+
+declare global {
+  interface Window { google?: { accounts?: { oauth2?: GoogleOAuth2 } }; }
+}
+
+let tokenClient: TokenClient | null = null;
 
 export const initAuth = (): Promise<void> => new Promise((resolve) => {
   const check = () => {
@@ -19,7 +38,7 @@ export const initAuth = (): Promise<void> => new Promise((resolve) => {
       tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
-        callback: async (resp: any) => {
+        callback: async (resp: TokenResponse) => {
           if (resp.error) return;
           const token = resp.access_token;
           const expiresIn = Number(resp.expires_in) || 3600;
