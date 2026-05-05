@@ -23,6 +23,31 @@ export default function App() {
     void idbGet<BookingTask[]>('tasks', 'all').then(arr => {
       if (arr) useTasks.setState({ items: arr });
     });
+
+    if ('serviceWorker' in navigator) {
+      const onMessage = (e: MessageEvent) => {
+        if ((e.data as { type?: string } | undefined)?.type === 'open-task') {
+          const { bookingId } = e.data as { bookingId?: string };
+          if (bookingId) useUI.getState().openModal({ kind: 'booking', id: bookingId });
+          // Re-hydrate i task perché il SW potrebbe averli aggiornati
+          void idbGet<BookingTask[]>('tasks', 'all').then(arr => {
+            if (arr) useTasks.setState({ items: arr });
+          });
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', onMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+    }
+  }, []);
+
+  // Lookup query string al boot per deep-link da notifica
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const bookingId = params.get('booking');
+    if (bookingId) {
+      useUI.getState().openModal({ kind: 'booking', id: bookingId });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   useEffect(() => {
