@@ -1,14 +1,19 @@
+import { useState } from 'react';
 import { useBookings } from '../store/bookings';
 import { usePromemoria } from '../store/promemoria';
 import { useUI } from '../store/ui';
 import { ThemeToggle } from './ThemeToggle';
 import { SyncIndicator } from './SyncIndicator';
 import { parseISO, nightsBetween, iso } from '../lib/date';
+import { TemplatesPage } from './settings/TemplatesPage';
 
 export const Home = () => {
   const bookings = useBookings(s => s.items);
   const promemoria = usePromemoria(s => s.items);
   const { goCalendar, openSide } = useUI();
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  if (showTemplates) return <TemplatesPage onBack={() => setShowTemplates(false)} />;
 
   const todoCount = bookings.filter(b => b.stato === 'proposta' || b.stato === 'anticipo_atteso').length
     + promemoria.filter(p => !p.done).length;
@@ -50,6 +55,11 @@ export const Home = () => {
           <span className="icn">🧳</span>
           <span className="ttl">Arrivi</span>
           <span className="sub">Chi sta per arrivare nei prossimi 30 giorni</span>
+        </button>
+        <button className="home-btn" onClick={() => setShowTemplates(true)}>
+          <span className="icn">⚙️</span>
+          <span className="ttl">Promemoria</span>
+          <span className="sub">Template e impostazioni notifiche</span>
         </button>
       </div>
     </section>
