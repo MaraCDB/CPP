@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useBookings } from '../store/bookings';
-import { usePromemoria } from '../store/promemoria';
 import { useUI } from '../store/ui';
 import { ThemeToggle } from './ThemeToggle';
 import { SyncIndicator } from './SyncIndicator';
@@ -9,14 +8,11 @@ import { TemplatesPage } from './settings/TemplatesPage';
 
 export const Home = () => {
   const bookings = useBookings(s => s.items);
-  const promemoria = usePromemoria(s => s.items);
   const { goCalendar, openSide } = useUI();
   const [showTemplates, setShowTemplates] = useState(false);
 
   if (showTemplates) return <TemplatesPage onBack={() => setShowTemplates(false)} />;
 
-  const todoCount = bookings.filter(b => b.stato === 'proposta' || b.stato === 'anticipo_atteso').length
-    + promemoria.filter(p => !p.done).length;
   const today = iso(new Date());
   const arriviCount = bookings.filter(b =>
     b.stato !== 'proposta' &&
@@ -24,7 +20,6 @@ export const Home = () => {
     nightsBetween(today, b.checkin) <= 30
   ).length;
 
-  const goDafare = () => { goCalendar(); openSide({ kind: 'todo' }); };
   const goArrivi = () => { goCalendar(); openSide({ kind: 'arrivi' }); };
 
   return (
@@ -39,12 +34,6 @@ export const Home = () => {
         <p>Cosa vuoi fare?</p>
       </div>
       <div className="home-buttons">
-        <button className="home-btn" onClick={goDafare}>
-          <span className={'badge warn' + (todoCount === 0 ? ' zero' : '')}>{todoCount}</span>
-          <span className="icn">🔔</span>
-          <span className="ttl">Da fare</span>
-          <span className="sub">Promemoria, proposte in attesa, anticipi da ricevere</span>
-        </button>
         <button className="home-btn" onClick={goCalendar}>
           <span className="icn">📅</span>
           <span className="ttl">Calendario</span>
@@ -58,8 +47,8 @@ export const Home = () => {
         </button>
         <button className="home-btn" onClick={() => setShowTemplates(true)}>
           <span className="icn">⚙️</span>
-          <span className="ttl">Promemoria</span>
-          <span className="sub">Template e impostazioni notifiche</span>
+          <span className="ttl">Impostazioni</span>
+          <span className="sub">Template promemoria e notifiche</span>
         </button>
       </div>
     </section>
