@@ -1,9 +1,9 @@
 import { useAuth } from '../../store/auth';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
-const SCOPES = [
+export const SCOPES = [
   'https://www.googleapis.com/auth/spreadsheets',
-  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/drive',
   'https://www.googleapis.com/auth/contacts',
   'openid', 'email', 'profile',
 ].join(' ');
@@ -39,7 +39,10 @@ export const initAuth = (): Promise<void> => new Promise((resolve) => {
         client_id: CLIENT_ID,
         scope: SCOPES,
         callback: async (resp: TokenResponse) => {
-          if (resp.error) return;
+          if (resp.error) {
+            useAuth.getState().signOut();
+            return;
+          }
           const token = resp.access_token;
           const expiresIn = Number(resp.expires_in) || 3600;
           const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {

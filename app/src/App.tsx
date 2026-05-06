@@ -6,7 +6,7 @@ import { CalendarPage } from './components/calendar/CalendarPage';
 import { SignIn } from './components/SignIn';
 import { InstallPrompt } from './components/InstallPrompt';
 import { NotificationOnboarding } from './components/NotificationOnboarding';
-import { initAuth, startTokenAutoRefresh } from './lib/google/auth';
+import { initAuth, silentRefresh, startTokenAutoRefresh } from './lib/google/auth';
 import { bootSync } from './lib/sync';
 import { useTemplates } from './store/templates';
 import { useTasks } from './store/tasks';
@@ -16,10 +16,14 @@ import { scheduleTask, cancelAll } from './lib/notifications/foregroundScheduler
 
 export default function App() {
   const user = useAuth(s => s.user);
+  const accessToken = useAuth(s => s.accessToken);
   const page = useUI(s => s.page);
 
   useEffect(() => {
-    void initAuth().then(startTokenAutoRefresh);
+    void initAuth().then(() => {
+      startTokenAutoRefresh();
+      if (useAuth.getState().user) silentRefresh();
+    });
     useTemplates.getState().seedDefaults();
     void idbGet<BookingTask[]>('tasks', 'all').then(arr => {
       if (arr) useTasks.setState({ items: arr });
@@ -52,8 +56,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (user) void bootSync();
-  }, [user]);
+    if (user && accessToken) void bootSync();
+  }, [user, accessToken]);
 
   // foreground scheduler: re-schedule on tasks store updates
   useEffect(() => {
