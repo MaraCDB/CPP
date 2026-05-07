@@ -16,7 +16,7 @@ export class ScopeError extends Error {
 }
 
 const call = async <T = unknown>(url: string, init: RequestInit = {}): Promise<T> => {
-  const t = useAuth.getState().accessToken;
+  const t = useAuth.getState().googleAccessToken;
   if (!t) throw new Error('No access token');
   const res = await fetch(url, {
     ...init,

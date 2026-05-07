@@ -11,8 +11,8 @@ beforeEach(() => {
 describe('TemplatesPage', () => {
   it('renders all templates sorted by sortOrder', () => {
     render(<TemplatesPage onBack={() => {}} />);
-    const items = screen.getAllByRole('listitem');
-    expect(items.length).toBe(DEFAULT_TEMPLATES.length);
+    const checkboxes = screen.getAllByLabelText(/^Abilita /);
+    expect(checkboxes.length).toBe(DEFAULT_TEMPLATES.length);
   });
 
   it('calls onBack when back button is clicked', () => {

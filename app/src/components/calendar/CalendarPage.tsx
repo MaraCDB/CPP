@@ -9,8 +9,6 @@ import { TodoPanel } from '../panels/TodoPanel';
 import { ArrivalsPanel } from '../panels/ArrivalsPanel';
 import { BookingForm } from '../forms/BookingForm';
 import { ClosureForm } from '../forms/ClosureForm';
-import { ReadOnlyBanner } from '../ReadOnlyBanner';
-
 export const CalendarPage = () => {
   const vista = useSettings(s => s.vista);
   const { side, modal, closeSide, closeModal } = useUI();
@@ -18,7 +16,6 @@ export const CalendarPage = () => {
   return (
     <>
       <Topbar />
-      <ReadOnlyBanner />
       <main className="p-3 md:p-5">
         {vista === 'mese' ? <MonthGoogleView /> : <VerticalGanttView />}
       </main>

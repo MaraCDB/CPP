@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useUI } from '../../store/ui';
 import { useBookings } from '../../store/bookings';
 import { parseISO, nightsBetween } from '../../lib/date';
@@ -27,7 +28,11 @@ export const BookingCard = ({ b }: { b: Prenotazione }) => {
   const emoji = b.camera === 'lampone' ? '🍇' : '🫐';
   const phoneE164 = b.contattoVia === 'telefono' && b.contattoValore ? toE164(b.contattoValore) : null;
 
-  const tasks = useTasks(s => s.byBooking(b.id));
+  const allTasks = useTasks(s => s.items);
+  const tasks = useMemo(
+    () => allTasks.filter(t => t.bookingId === b.id && !t.deletedAt),
+    [allTasks, b.id],
+  );
   const totalActive = tasks.filter(t => t.notify);
   const doneCount = totalActive.filter(t => t.done).length;
   const upcoming = totalActive

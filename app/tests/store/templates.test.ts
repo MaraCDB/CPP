@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('../../src/lib/firebase/auth', () => ({ auth: { currentUser: null } }));
+vi.mock('../../src/lib/firebase/db', () => ({
+  upsertDoc: vi.fn().mockResolvedValue(undefined),
+  removeDoc: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { useTemplates } from '../../src/store/templates';
 import { DEFAULT_TEMPLATES } from '../../src/lib/reminders/templates';
 

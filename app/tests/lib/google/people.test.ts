@@ -17,7 +17,7 @@ const mockFetch = (responses: Array<{ ok: boolean; status?: number; body: unknow
 
 describe('people API', () => {
   beforeEach(() => {
-    useAuth.setState({ accessToken: 'fake-token', tokenExpiry: Date.now() + 3600_000 } as Parameters<typeof useAuth.setState>[0]);
+    useAuth.setState({ googleAccessToken: 'fake-token' });
   });
   afterEach(() => vi.restoreAllMocks());
 

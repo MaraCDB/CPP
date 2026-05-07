@@ -1,11 +1,10 @@
 import { create } from 'zustand';
 import type { Prenotazione } from '../types';
 import { uid } from '../lib/id';
+import { upsertDoc, removeDoc } from '../lib/firebase/db';
+import { auth } from '../lib/firebase/auth';
 
-const enq = async (kind: 'upsert_booking' | 'delete_booking', payload: unknown) => {
-  const { enqueue } = await import('../lib/sync');
-  void enqueue(kind, payload);
-};
+const getUid = (): string | null => auth.currentUser?.uid ?? null;
 
 const onBookingCreated = async (booking: Prenotazione) => {
   const { useTemplates } = await import('./templates');
@@ -54,7 +53,8 @@ export const useBookings = create<State>((set, get) => ({
     const now = new Date().toISOString();
     const item: Prenotazione = { ...b, id: uid('b'), creatoIl: now, aggiornatoIl: now };
     set({ items: [...get().items, item] });
-    void enq('upsert_booking', item);
+    const u = getUid();
+    if (u) void upsertDoc(u, 'bookings', item.id, item);
     void onBookingCreated(item);
     return item;
   },
@@ -63,13 +63,15 @@ export const useBookings = create<State>((set, get) => ({
     set({ items: get().items.map(b => b.id === id ? { ...b, ...patch, aggiornatoIl: new Date().toISOString() } : b) });
     const updated = get().items.find(b => b.id === id);
     if (updated) {
-      void enq('upsert_booking', updated);
+      const u = getUid();
+      if (u) void upsertDoc(u, 'bookings', updated.id, updated);
       if (old) void onBookingUpdated(old, updated);
     }
   },
   remove: (id) => {
     set({ items: get().items.filter(b => b.id !== id) });
-    void enq('delete_booking', { id });
+    const u = getUid();
+    if (u) void removeDoc(u, 'bookings', id);
     void onBookingRemoved(id);
   },
 }));

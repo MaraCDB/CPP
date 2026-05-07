@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTasks } from '../../store/tasks';
 import { useTemplates } from '../../store/templates';
 import { TaskList } from '../common/TaskList';
@@ -11,7 +11,11 @@ interface Props {
 }
 
 export const BookingFormReminders = ({ bookingId, bookingCheckin }: Props) => {
-  const tasksForBooking = useTasks(s => s.byBooking(bookingId));
+  const allTasks = useTasks(s => s.items);
+  const tasksForBooking = useMemo(
+    () => allTasks.filter(t => t.bookingId === bookingId && !t.deletedAt),
+    [allTasks, bookingId],
+  );
   const updateTask = useTasks(s => s.update);
   const toggleDoneTask = useTasks(s => s.toggleDone);
   const addTask = useTasks(s => s.add);
