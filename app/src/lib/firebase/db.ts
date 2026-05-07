@@ -25,9 +25,26 @@ export const subscribeCollection = <T>(
   });
 };
 
+// Firestore rejects `undefined` in document fields. Strip them before write
+// (optional fields like `riferimento?: string` come through as undefined when
+// the user doesn't fill them).
+const stripUndefined = <T extends Record<string, unknown>>(o: T): T => {
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(o)) {
+    const v = o[k];
+    if (v === undefined) continue;
+    if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+      out[k] = stripUndefined(v as Record<string, unknown>);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out as T;
+};
+
 export const upsertDoc = <T extends { id: string }>(
   uid: string, name: CollectionName, id: string, data: T,
-): Promise<void> => setDoc(doc(db, 'users', uid, name, id), data);
+): Promise<void> => setDoc(doc(db, 'users', uid, name, id), stripUndefined(data as unknown as Record<string, unknown>));
 
 export const removeDoc = (
   uid: string, name: CollectionName, id: string,
