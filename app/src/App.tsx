@@ -6,8 +6,9 @@ import { CalendarPage } from './components/calendar/CalendarPage';
 import { SignIn } from './components/SignIn';
 import { InstallPrompt } from './components/InstallPrompt';
 import { NotificationOnboarding } from './components/NotificationOnboarding';
-import { initAuth, silentRefresh, startTokenAutoRefresh } from './lib/google/auth';
-import { bootSync } from './lib/sync';
+import { auth, initAuthListener } from './lib/firebase/auth';
+import { initPersistence } from './lib/firebase/db';
+import { useFirestoreSync } from './hooks/useFirestoreSync';
 import { useTemplates } from './store/templates';
 import { useTasks } from './store/tasks';
 import { idbGet } from './lib/idb';
@@ -16,36 +17,37 @@ import { scheduleTask, cancelAll } from './lib/notifications/foregroundScheduler
 
 export default function App() {
   const user = useAuth(s => s.user);
-  const accessToken = useAuth(s => s.accessToken);
   const page = useUI(s => s.page);
 
   useEffect(() => {
-    void initAuth().then(() => {
-      startTokenAutoRefresh();
-      if (useAuth.getState().user) silentRefresh();
-    });
+    void initPersistence();
+    const unsub = initAuthListener();
     useTemplates.getState().seedDefaults();
     void idbGet<BookingTask[]>('tasks', 'all').then(arr => {
       if (arr) useTasks.setState({ items: arr });
     });
 
+    let removeMsgListener: (() => void) | undefined;
     if ('serviceWorker' in navigator) {
       const onMessage = (e: MessageEvent) => {
         if ((e.data as { type?: string } | undefined)?.type === 'open-task') {
           const { bookingId } = e.data as { bookingId?: string };
           if (bookingId) useUI.getState().openModal({ kind: 'booking', id: bookingId });
-          // Re-hydrate i task perché il SW potrebbe averli aggiornati
           void idbGet<BookingTask[]>('tasks', 'all').then(arr => {
             if (arr) useTasks.setState({ items: arr });
           });
         }
       };
       navigator.serviceWorker.addEventListener('message', onMessage);
-      return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+      removeMsgListener = () => navigator.serviceWorker.removeEventListener('message', onMessage);
     }
+
+    return () => {
+      unsub();
+      removeMsgListener?.();
+    };
   }, []);
 
-  // Lookup query string al boot per deep-link da notifica
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const bookingId = params.get('booking');
@@ -55,33 +57,27 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => {
-    if (user && accessToken) void bootSync();
-  }, [user, accessToken]);
+  const uid = user ? auth.currentUser?.uid ?? null : null;
+  useFirestoreSync(uid);
 
-  // foreground scheduler: re-schedule on tasks store updates
   useEffect(() => {
     const onShown = (taskId: string) =>
       useTasks.getState().update(taskId, {
         notificationStatus: 'shown',
         notificationShownAt: new Date().toISOString(),
       });
-
     const reschedule = () => {
       cancelAll();
       const all = useTasks.getState().items;
       all.forEach(t => scheduleTask(t, onShown));
     };
-
     reschedule();
     const unsub = useTasks.subscribe(reschedule);
-
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') cancelAll();
       else reschedule();
     };
     document.addEventListener('visibilitychange', onVisibility);
-
     return () => {
       unsub();
       document.removeEventListener('visibilitychange', onVisibility);

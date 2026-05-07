@@ -2,7 +2,6 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useBookings } from '../../store/bookings';
 import { usePromemoria } from '../../store/promemoria';
-import { useAuth } from '../../store/auth';
 import { SidePanel } from '../common/SidePanel';
 import { BookingCard } from '../common/BookingCard';
 import type { Promemoria } from '../../types';
@@ -10,7 +9,6 @@ import type { Promemoria } from '../../types';
 export const TodoPanel = ({ onClose }: { onClose: () => void }) => {
   const bookings = useBookings(s => s.items);
   const { items: promemoria, add, toggle, remove } = usePromemoria();
-  const readonly = useAuth(s => s.readonly);
   const [text, setText] = useState('');
 
   const open = promemoria.filter(p => !p.done).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -29,22 +27,20 @@ export const TodoPanel = ({ onClose }: { onClose: () => void }) => {
     const when = dt.toLocaleDateString('it-IT',{day:'numeric',month:'short'}) + ' ' + dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
     return (
       <div className={`promemoria-card${p.done ? ' done' : ''}`}>
-        <input type="checkbox" checked={p.done} disabled={readonly} onChange={() => !readonly && toggle(p.id)} />
+        <input type="checkbox" checked={p.done} onChange={() => toggle(p.id)} />
         <div className="txt">{p.testo}<div className="meta">{when}</div></div>
-        {!readonly && <button className="del" onClick={() => { if (confirm('Eliminare questa nota?')) remove(p.id); }} title="Elimina">✕</button>}
+        <button className="del" onClick={() => { if (confirm('Eliminare questa nota?')) remove(p.id); }} title="Elimina">✕</button>
       </div>
     );
   };
 
   return (
     <SidePanel open title="🔔 Da fare" onClose={onClose}>
-      {!readonly && (
-        <form className="quicknote" onSubmit={onAdd}>
-          <input type="text" value={text} onChange={(e) => setText(e.target.value)}
-            placeholder="Aggiungi nota rapida (enter per salvare)…" autoComplete="off" autoFocus />
-          <button type="submit" className="btn btn-primary">➕</button>
-        </form>
-      )}
+      <form className="quicknote" onSubmit={onAdd}>
+        <input type="text" value={text} onChange={(e) => setText(e.target.value)}
+          placeholder="Aggiungi nota rapida (enter per salvare)…" autoComplete="off" autoFocus />
+        <button type="submit" className="btn btn-primary">➕</button>
+      </form>
       {open.length > 0 && <>
         <div className="section-title">📌 Note ({open.length})</div>
         {open.map(p => <PromemoriaCard key={p.id} p={p} />)}

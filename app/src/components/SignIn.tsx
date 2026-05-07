@@ -1,4 +1,4 @@
-import { signIn } from '../lib/google/auth';
+import { signIn } from '../lib/firebase/auth';
 
 export const SignIn = () => (
   <section className="home" style={{ textAlign: 'center' }}>
@@ -11,7 +11,7 @@ export const SignIn = () => (
       <p className="mb-4 text-sm" style={{ color:'var(--ink-soft)' }}>
         Accedi con Google per sincronizzare le prenotazioni tra tutti i tuoi dispositivi.
       </p>
-      <button className="btn btn-primary w-full" onClick={signIn}>Accedi con Google</button>
+      <button className="btn btn-primary w-full" onClick={() => void signIn()}>Accedi con Google</button>
     </div>
   </section>
 );

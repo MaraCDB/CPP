@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { useBookings } from '../../store/bookings';
 import { useClosures } from '../../store/closures';
-import { useAuth } from '../../store/auth';
 import { Modal } from '../common/Modal';
 import { ChipGroup } from '../common/ChipGroup';
 import { BookingFormReminders } from './BookingFormReminders';
@@ -21,7 +20,6 @@ const empty = (prefillCheckin?: string): Partial<Prenotazione> => ({
 });
 
 export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
-  const readonly = useAuth(s => s.readonly);
   const { items, add, update, remove } = useBookings();
   const closures = useClosures(s => s.items);
   const existing = id ? items.find(b => b.id === id) : undefined;
@@ -47,8 +45,6 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
       }));
     }
   }, [data.prezzoTotale, antTouched]);
-
-  if (readonly) return null;
 
   const set = <K extends keyof Prenotazione>(k: K, v: Prenotazione[K]) => setData(d => ({ ...d, [k]: v }));
   const setAnticipo = (patch: Partial<NonNullable<Prenotazione['anticipo']>>) =>

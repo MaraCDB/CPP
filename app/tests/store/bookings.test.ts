@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import 'fake-indexeddb/auto';
+
+vi.mock('../../src/lib/firebase/auth', () => ({ auth: { currentUser: null } }));
+vi.mock('../../src/lib/firebase/db', () => ({
+  upsertDoc: vi.fn().mockResolvedValue(undefined),
+  removeDoc: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { useBookings } from '../../src/store/bookings';
 
 describe('bookings store', () => {

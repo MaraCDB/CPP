@@ -1,7 +1,6 @@
 import { useBookings } from '../../store/bookings';
 import { useClosures } from '../../store/closures';
 import { useUI } from '../../store/ui';
-import { useAuth } from '../../store/auth';
 import { SidePanel } from '../common/SidePanel';
 import { BookingCard } from '../common/BookingCard';
 import { parseISO } from '../../lib/date';
@@ -12,7 +11,6 @@ export const DayDetailPanel = ({ date, onClose }: { date: string; onClose: () =>
   const bookings = useBookings(s => s.items);
   const closures = useClosures(s => s.items);
   const { openModal } = useUI();
-  const readonly = useAuth(s => s.readonly);
   const d = parseISO(date);
   const lampone = bookings.filter(b => b.camera === 'lampone' && parseISO(b.checkin) <= d && parseISO(b.checkout) > d);
   const mirtillo = bookings.filter(b => b.camera === 'mirtillo' && parseISO(b.checkin) <= d && parseISO(b.checkout) > d);
@@ -44,11 +42,9 @@ export const DayDetailPanel = ({ date, onClose }: { date: string; onClose: () =>
           </div>
         );
       })}
-      {!readonly && (
-        <button className="btn btn-primary w-full mt-2" onClick={() => openModal({ kind: 'booking', prefillCheckin: date })}>
-          ➕ Nuova prenotazione per questo giorno
-        </button>
-      )}
+      <button className="btn btn-primary w-full mt-2" onClick={() => openModal({ kind: 'booking', prefillCheckin: date })}>
+        ➕ Nuova prenotazione per questo giorno
+      </button>
     </SidePanel>
   );
 };
