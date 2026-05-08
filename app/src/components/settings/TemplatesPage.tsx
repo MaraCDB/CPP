@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTemplates } from '../../store/templates';
 import { GenerateRemindersButton } from './GenerateRemindersButton';
+import { AccountSection } from './AccountSection';
 import type { ReminderTemplate } from '../../types';
 import { buildZipBytes } from '../../lib/firebase/backup';
 import {
@@ -57,6 +58,8 @@ export const TemplatesPage = ({ onBack }: { onBack: () => void }) => {
       <GenerateRemindersButton />
 
       <BackupSection />
+
+      <AccountSection />
 
       {editing && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setEditing(null)}>
