@@ -6,7 +6,7 @@ import { Modal } from '../common/Modal';
 import { ChipGroup } from '../common/ChipGroup';
 import { BookingFormReminders } from './BookingFormReminders';
 import { checkConflicts } from '../../lib/conflicts';
-import { nightsBetween } from '../../lib/date';
+import { nightsBetween, addDays, iso, parseISO } from '../../lib/date';
 import type { Prenotazione, Camera, Stato, ContattoVia, AnticipoTipo } from '../../types';
 import { toE164 } from '../../lib/phone';
 import { searchByPhone, createContact, ScopeError } from '../../lib/google/people';
@@ -51,6 +51,15 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
     setData(d => ({ ...d, anticipo: { ...(d.anticipo || { importo: 0 }), ...patch } as Prenotazione['anticipo'] }));
 
   const nights = data.checkin && data.checkout && data.checkout > data.checkin ? nightsBetween(data.checkin, data.checkout) : 0;
+  const checkoutMin = data.checkin ? iso(addDays(parseISO(data.checkin), 1)) : undefined;
+
+  const onCheckinChange = (v: string) => {
+    setData(d => ({
+      ...d,
+      checkin: v,
+      checkout: d.checkout && v && d.checkout <= v ? '' : d.checkout,
+    }));
+  };
 
   const finalize = (candidate: Prenotazione) => {
     const { id: _id, creatoIl: _c, aggiornatoIl: _u, ...rest } = candidate; // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -157,9 +166,9 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
         </label>
         <div className="row2">
           <label className="field"><span>Check-in</span>
-            <input type="date" required value={data.checkin || ''} onChange={(e) => set('checkin', e.target.value)} /></label>
+            <input type="date" required value={data.checkin || ''} onChange={(e) => onCheckinChange(e.target.value)} /></label>
           <label className="field"><span>Check-out</span>
-            <input type="date" required value={data.checkout || ''} onChange={(e) => set('checkout', e.target.value)} /></label>
+            <input type="date" required min={checkoutMin} value={data.checkout || ''} onChange={(e) => set('checkout', e.target.value)} /></label>
         </div>
         {nights > 0 && <div className="text-[12px] -mt-2 mb-3" style={{ color: 'var(--ink-soft)' }}>{nights} notti</div>}
         <div className="row2">
