@@ -37,4 +37,24 @@ describe('overdueTasks', () => {
     const result = overdueTasks([t({ id: '1', notificationStatus: 'shown' })], now);
     expect(result.map(x => x.id)).toEqual(['1']);
   });
+
+  it('esclude un task di servizio mai ordinato (isService true, notify false)', () => {
+    const result = overdueTasks([t({ id: '1', isService: true, notify: false })], now);
+    expect(result).toEqual([]);
+  });
+
+  it('include un task di servizio ordinato (isService true, notify true) e scaduto', () => {
+    const result = overdueTasks([t({ id: '1', isService: true, notify: true })], now);
+    expect(result.map(x => x.id)).toEqual(['1']);
+  });
+
+  it('esclude un task non di servizio scaduto da piu di 30 giorni', () => {
+    const result = overdueTasks([t({ id: '1', dueAt: '2026-04-01T08:00:00.000Z' })], now);
+    expect(result).toEqual([]);
+  });
+
+  it('include un task non di servizio scaduto da meno di 30 giorni', () => {
+    const result = overdueTasks([t({ id: '1', dueAt: '2026-04-10T08:00:00.000Z' })], now);
+    expect(result.map(x => x.id)).toEqual(['1']);
+  });
 });
