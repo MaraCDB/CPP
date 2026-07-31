@@ -1,15 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBookings } from '../store/bookings';
 import { useUI } from '../store/ui';
 import { ThemeToggle } from './ThemeToggle';
 import { SyncIndicator } from './SyncIndicator';
 import { parseISO, nightsBetween, iso } from '../lib/date';
 import { TemplatesPage } from './settings/TemplatesPage';
+import { useTasks } from '../store/tasks';
+import { overdueTasks } from '../lib/reminders/overdueTasks';
 
 export const Home = () => {
   const bookings = useBookings(s => s.items);
   const { goCalendar, openSide } = useUI();
   const [showTemplates, setShowTemplates] = useState(false);
+  const tasks = useTasks(s => s.items);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   if (showTemplates) return <TemplatesPage onBack={() => setShowTemplates(false)} />;
 
@@ -21,6 +29,8 @@ export const Home = () => {
   ).length;
 
   const goArrivi = () => { goCalendar(); openSide({ kind: 'arrivi' }); };
+  const overdueCount = overdueTasks(tasks, now).length;
+  const goOverdue = () => { goCalendar(); openSide({ kind: 'todo' }); };
 
   return (
     <section className="home">
@@ -33,6 +43,15 @@ export const Home = () => {
         <h1>Cuore di Bosco</h1>
         <p>Cosa vuoi fare?</p>
       </div>
+      {overdueCount > 0 && (
+        <button
+          className="text-left text-[13px] font-medium rounded-xl px-4 py-3 mb-4"
+          style={{ background: 'var(--banner-bg)', color: 'var(--banner-text)', border: 'none', cursor: 'pointer', width: 'min(420px,100%)' }}
+          onClick={goOverdue}
+        >
+          ⚠️ {overdueCount} promemoria scadut{overdueCount === 1 ? 'o' : 'i'} da controllare
+        </button>
+      )}
       <div className="home-buttons">
         <button className="home-btn" onClick={goCalendar}>
           <span className="icn">📅</span>
