@@ -13,7 +13,6 @@ import { useTemplates } from './store/templates';
 import { useTasks } from './store/tasks';
 import { idbGet } from './lib/idb';
 import type { BookingTask } from './types';
-import { scheduleTask, cancelAll } from './lib/notifications/foregroundScheduler';
 
 export default function App() {
   const user = useAuth(s => s.user);
@@ -59,31 +58,6 @@ export default function App() {
 
   const uid = user ? auth.currentUser?.uid ?? null : null;
   useFirestoreSync(uid);
-
-  useEffect(() => {
-    const onShown = (taskId: string) =>
-      useTasks.getState().update(taskId, {
-        notificationStatus: 'shown',
-        notificationShownAt: new Date().toISOString(),
-      });
-    const reschedule = () => {
-      cancelAll();
-      const all = useTasks.getState().items;
-      all.forEach(t => scheduleTask(t, onShown));
-    };
-    reschedule();
-    const unsub = useTasks.subscribe(reschedule);
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') cancelAll();
-      else reschedule();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => {
-      unsub();
-      document.removeEventListener('visibilitychange', onVisibility);
-      cancelAll();
-    };
-  }, []);
 
   if (!user) return <SignIn />;
   return (
