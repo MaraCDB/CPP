@@ -3,6 +3,7 @@ import { precacheAndRoute } from 'workbox-precaching';
 import { openDB } from 'idb';
 import type { BookingTask } from './types';
 import { pickToNotify } from './lib/reminders/pickToNotify';
+import { buildDigestNotification } from './lib/reminders/buildDigest';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -42,13 +43,12 @@ self.addEventListener('periodicsync', (event: Event) => {
     const overdue = pickToNotify(tasks, new Date());
     if (overdue.length === 0) return;
     const nowIso = new Date().toISOString();
-    for (const t of overdue) {
-      await self.registration.showNotification(t.title, {
-        body: t.notes,
-        tag: t.id,
-        data: { bookingId: t.bookingId, taskId: t.id },
-      });
-    }
+    const { title, body } = buildDigestNotification(overdue);
+    await self.registration.showNotification(title, {
+      body,
+      tag: 'overdue-digest',
+      data: {},
+    });
     const updated = tasks.map(t => {
       if (overdue.some(o => o.id === t.id)) {
         return { ...t, notificationStatus: 'shown' as const, notificationShownAt: nowIso };
