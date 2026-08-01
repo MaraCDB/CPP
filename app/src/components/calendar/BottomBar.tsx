@@ -23,7 +23,7 @@ export const BottomBar = () => {
   ).length;
 
   return (
-    <footer className="bottombar sticky bottom-0">
+    <footer className="bottombar">
       <button className="counter warn" onClick={() => openSide({ kind: 'todo' })}>
         🔔<span className="lbl"> Da fare</span> <span className="badge">{todoCount}</span>
       </button>

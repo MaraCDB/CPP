@@ -276,7 +276,14 @@
   .side.open{transform:translateX(0)}
 
   /* ============ CALENDARIO: colonna principale + pannello laterale ============ */
+  /* topbar/bottombar fissi, solo il contenuto (.calendar-scroll) scorre: prima, con
+     tutto in flusso normale, "sticky bottom-0" sulla bottombar non aveva alcun effetto
+     reale (era già l'ultimo elemento) e nelle viste Trim/Sem/Anno, molto più alte,
+     la barra finiva fuori schermo finché non si scorreva tutta la pagina */
   .calendar-shell{min-height:100vh}
+  .calendar-main{display:flex;flex-direction:column;height:100dvh}
+  .calendar-main #topbar,.calendar-main .bottombar{flex:0 0 auto}
+  .calendar-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
   @media(min-width:900px){
     .calendar-shell{display:flex;align-items:flex-start}
     .calendar-main{flex:1 1 auto;min-width:0}
