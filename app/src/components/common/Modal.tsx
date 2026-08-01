@@ -31,7 +31,7 @@ export const Modal = ({ open, onClose, title, children, footer }: Props) => {
       <div className="modal-box">
         <div className="modal-head flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--line)' }}>
           <h3 className="font-semibold text-lg">{title}</h3>
-          <button className="btn btn-ghost !p-2" onClick={onClose} aria-label="Chiudi">✕</button>
+          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Chiudi">✕</button>
         </div>
         <div className="modal-body">{children}</div>
         {footer && (

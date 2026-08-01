@@ -23,7 +23,7 @@ export const Topbar = () => {
     <header id="topbar" className="flex items-center justify-between px-4 py-3 border-b flex-wrap gap-2"
       style={{ background: 'var(--card)', borderColor: 'var(--line)' }}>
       <div className="flex items-center gap-2">
-        <button className="btn btn-ghost !p-2" onClick={goHome} title="Home">🏠</button>
+        <button className="btn btn-ghost btn-icon" onClick={goHome} title="Home">🏠</button>
         <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold"
              style={{ background: 'linear-gradient(135deg,var(--lampone),var(--mirtillo))' }}>🏡</div>
         <div>
@@ -33,9 +33,9 @@ export const Topbar = () => {
       </div>
       <div className="flex items-center gap-2">
         <ViewSwitch value={vista} onChange={setVista} />
-        <button className="btn btn-ghost !p-2" onClick={() => shiftAnchor(-MONTHS_COUNT[vista])}>◀</button>
+        <button className="btn btn-ghost btn-icon" onClick={() => shiftAnchor(-MONTHS_COUNT[vista])}>◀</button>
         <div className="text-sm font-semibold min-w-[90px] text-center">{label}</div>
-        <button className="btn btn-ghost !p-2" onClick={() => shiftAnchor(MONTHS_COUNT[vista])}>▶</button>
+        <button className="btn btn-ghost btn-icon" onClick={() => shiftAnchor(MONTHS_COUNT[vista])}>▶</button>
 
         <ThemeToggle />
         <SyncIndicator />

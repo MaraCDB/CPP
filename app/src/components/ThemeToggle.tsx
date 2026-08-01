@@ -30,7 +30,7 @@ export const ThemeToggle = ({ floating = false }: { floating?: boolean }) => {
 
   const cls = floating
     ? 'absolute top-[calc(env(safe-area-inset-top)+14px)] right-[14px] w-10 h-10 rounded-full text-lg cursor-pointer'
-    : 'btn btn-ghost !p-2';
+    : 'btn btn-ghost btn-icon round';
 
   return (
     <button onClick={cycle} title="Tema" className={cls}

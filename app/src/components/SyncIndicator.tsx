@@ -12,7 +12,7 @@ export const SyncIndicator = () => {
   const l = LABEL[status];
   return (
     <button
-      className="btn btn-ghost !p-2 text-xs"
+      className="btn btn-ghost btn-icon round text-xs"
       title={l.text}
       onClick={() => void goOnline()}
     >

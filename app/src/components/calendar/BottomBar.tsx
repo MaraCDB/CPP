@@ -30,7 +30,7 @@ export const BottomBar = () => {
       <button className="counter" onClick={() => openSide({ kind: 'arrivi' })}>
         🧳<span className="lbl"> Arrivi</span> <span className="badge">{arriviCount}</span>
       </button>
-      <button className="btn btn-ghost" title="Chiusura" onClick={() => openModal({ kind: 'closure' })}>🔒</button>
+      <button className="btn btn-ghost btn-icon" title="Chiusura" onClick={() => openModal({ kind: 'closure' })}>🔒</button>
       <button className="btn btn-ghost" onClick={() => setAnchor(iso(new Date(new Date().getFullYear(), new Date().getMonth(), 1)))}>
         📅 <span className="lbl">Oggi</span>
       </button>
