@@ -226,10 +226,16 @@
   .pill.proposta{background:var(--pill-prop-bg);color:var(--pill-prop-text)}
 
   /* ============ MODAL ============ */
-  .modal{position:fixed;inset:0;background:rgba(25,20,15,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal{position:fixed;inset:0;background:rgba(25,20,15,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:16px;overscroll-behavior:contain}
   .modal.open{display:flex}
-  .modal-box{background:var(--card);border-radius:16px;width:min(520px,100%);max-height:92vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,.25)}
-  @media(max-width:640px){.modal-box{border-radius:16px 16px 0 0;align-self:flex-end;max-height:94vh}}
+  .modal-box{background:var(--card);border-radius:16px;width:min(520px,100%);max-height:92vh;box-shadow:0 20px 50px rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden}
+  .modal-head{flex:0 0 auto}
+  .modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .modal-foot{flex:0 0 auto;padding-bottom:calc(env(safe-area-inset-bottom) + 16px)}
+  @media(max-width:640px){
+    .modal{padding:0}
+    .modal-box{border-radius:0;width:100%;height:100dvh;max-height:100dvh}
+  }
 
   /* ============ FORM ============ */
   label.field{display:block;margin-bottom:14px}

@@ -29,8 +29,21 @@ export const ClosureForm = ({ id, onClose }: Props) => {
   };
 
   return (
-    <Modal open onClose={onClose} title={existing ? '🔒 Modifica chiusura' : '🔒 Nuovo periodo di chiusura'}>
-      <form onSubmit={onSubmit} className="p-4">
+    <Modal
+      open
+      onClose={onClose}
+      title={existing ? '🔒 Modifica chiusura' : '🔒 Nuovo periodo di chiusura'}
+      footer={
+        <div className="flex justify-between items-center">
+          {existing ? <button type="button" className="btn btn-danger" onClick={onDelete}>Elimina</button> : <span />}
+          <div className="ml-auto flex gap-2">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>Annulla</button>
+            <button type="submit" form="closure-form" className="btn btn-primary">Salva</button>
+          </div>
+        </div>
+      }
+    >
+      <form id="closure-form" onSubmit={onSubmit} className="p-4">
         <div className="text-[13px] mb-3 p-3 rounded-lg" style={{ background: 'var(--surface-2)', color: 'var(--ink-soft)' }}>
           La struttura resta chiusa in queste date. Puoi comunque salvare prenotazioni (es. famiglia/amici) ricevendo un avviso.
         </div>
@@ -40,13 +53,6 @@ export const ClosureForm = ({ id, onClose }: Props) => {
         </div>
         <label className="field"><span>Nota (motivo)</span>
           <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="es. Vacanza famiglia, Lavori..." /></label>
-        <div className="flex justify-between items-center mt-4">
-          {existing ? <button type="button" className="btn btn-danger" onClick={onDelete}>Elimina</button> : <span />}
-          <div className="ml-auto flex gap-2">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Annulla</button>
-            <button type="submit" className="btn btn-primary">Salva</button>
-          </div>
-        </div>
       </form>
     </Modal>
   );

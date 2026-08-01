@@ -156,8 +156,21 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
   };
 
   return (
-    <Modal open onClose={onClose} title={existing ? 'Modifica prenotazione' : 'Nuova prenotazione'}>
-      <form onSubmit={(e) => { void onSubmit(e); }} className="p-4">
+    <Modal
+      open
+      onClose={onClose}
+      title={existing ? 'Modifica prenotazione' : 'Nuova prenotazione'}
+      footer={
+        <div className="flex justify-between items-center">
+          {existing ? <button type="button" className="btn btn-danger" onClick={onDelete}>Elimina</button> : <span />}
+          <div className="ml-auto flex gap-2">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>Annulla</button>
+            <button type="submit" form="booking-form" className="btn btn-primary">Salva</button>
+          </div>
+        </div>
+      }
+    >
+      <form id="booking-form" onSubmit={(e) => { void onSubmit(e); }} className="p-4">
         <label className="field">
           <span>Camera</span>
           <ChipGroup<Camera>
@@ -226,14 +239,6 @@ export const BookingForm = ({ id, prefillCheckin, onClose }: Props) => {
         {existing && (
           <BookingFormReminders bookingId={existing.id} bookingCheckin={data.checkin} />
         )}
-
-        <div className="flex justify-between items-center mt-4">
-          {existing ? <button type="button" className="btn btn-danger" onClick={onDelete}>Elimina</button> : <span />}
-          <div className="ml-auto flex gap-2">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Annulla</button>
-            <button type="submit" className="btn btn-primary">Salva</button>
-          </div>
-        </div>
       </form>
         {pendingConfirm && (
           <ConfirmCreateContactModal
