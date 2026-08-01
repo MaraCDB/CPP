@@ -1,17 +1,21 @@
 import { useBookings } from '../../store/bookings';
 import { usePromemoria } from '../../store/promemoria';
+import { useTasks } from '../../store/tasks';
 import { useSettings } from '../../store/settings';
 import { useUI } from '../../store/ui';
 import { parseISO, nightsBetween, iso } from '../../lib/date';
+import { overdueTasks } from '../../lib/reminders/overdueTasks';
 
 export const BottomBar = () => {
   const bookings = useBookings(s => s.items);
   const promemoria = usePromemoria(s => s.items);
+  const tasks = useTasks(s => s.items);
   const { openSide, openModal } = useUI();
   const setAnchor = useSettings(s => s.setAnchor);
   const today = iso(new Date());
   const todoCount = bookings.filter(b => b.stato === 'proposta' || b.stato === 'anticipo_atteso').length
-    + promemoria.filter(p => !p.done).length;
+    + promemoria.filter(p => !p.done).length
+    + overdueTasks(tasks, new Date()).length;
   const arriviCount = bookings.filter(b =>
     b.stato !== 'proposta' &&
     parseISO(b.checkin) >= parseISO(today) &&

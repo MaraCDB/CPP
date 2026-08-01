@@ -33,6 +33,8 @@ In [sw.ts](../../../app/src/sw.ts), il gestore `periodicsync`:
 
 `notificationclick` per il tag digest apre/porta in primo piano l'app sulla home semplice, senza deep-link a una prenotazione specifica.
 
+**Nota su `notificationStatus: 'shown'` e resync da Firestore:** il flip `pending → shown` è scritto dal service worker solo nella cache locale IndexedDB, non è sincronizzato su Firestore. Quando l'app risincronizza da Firestore (altro device, reinstall, refresh dopo periodo offline), il flag può tornare a `'pending'` per task che erano già stati notificati altrove. Questo è un compromesso accettato e documentato, non un bug non notato: la notifica digest consolidata va quindi intesa come un **promemoria ricorrente che si ripresenta finché restano task scaduti**, non come una notifica strettamente one-shot. Non è previsto un fix del sync sottostante in questa iterazione.
+
 ## 2. Rimozione delle notifiche in foreground
 
 - Rimosso [foregroundScheduler.ts](../../../app/src/lib/notifications/foregroundScheduler.ts) (intero modulo: `scheduleTask`/`cancelTask`/`cancelAll`/`getActiveCount`).
@@ -45,11 +47,23 @@ Effetto collaterale: `notificationStatus`/`notificationShownAt` sono scritti sol
 Nuovo helper condiviso, es. `app/src/lib/reminders/overdueTasks.ts`:
 
 ```ts
-export const overdueTasks = (tasks: BookingTask[], now: Date): BookingTask[] =>
-  tasks.filter(t => !t.done && !t.deletedAt && new Date(t.dueAt).getTime() <= now.getTime());
+const LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
+
+export const overdueTasks = (tasks: BookingTask[], now: Date): BookingTask[] => {
+  const nowMs = now.getTime();
+  const lowerBoundMs = nowMs - LOOKBACK_MS;
+  return tasks.filter(t => {
+    if (t.done || t.deletedAt) return false;
+    if (t.isService && !t.notify) return false; // servizio mai ordinato dall'ospite: non e' "lavoro da fare"
+    const dueMs = new Date(t.dueAt).getTime();
+    return dueMs <= nowMs && dueMs >= lowerBoundMs;
+  });
+};
 ```
 
 (Nota: non riusa `pickToNotify` perché quest'ultimo filtra anche su `notify`/`notificationStatus === 'pending'` — qui interessa il lavoro da fare, non lo stato della notifica push.)
+
+Due esclusioni aggiuntive rispetto alla prima versione: i task di servizio (`isService: true`, es. "Preparare merenda"/"Preparare cena") con `notify: false` sono esclusi perché per questi task `notify` non significa "notifiche silenziate" ma "l'ospite ha ordinato questo servizio" (vedi checkbox in [BookingFormReminders.tsx](../../../app/src/components/forms/BookingFormReminders.tsx)) — un servizio mai ordinato non deve restare "scaduto" per sempre solo perché l'orario di default è passato. In secondo luogo la finestra è limitata agli ultimi 30 giorni (`dueAt` tra `now - 30gg` e `now`): senza questo limite un task semplicemente mai spuntato di una prenotazione di mesi fa resterebbe "scaduto" all'infinito, non essendoci alcuna logica di retention/purge altrove nel codice. I task più vecchi di 30 giorni restano comunque visibili nella lista promemoria della singola prenotazione in `BookingFormReminders.tsx`, non toccata da questo cambio.
 
 **Home** ([Home.tsx](../../../app/src/components/Home.tsx)): sopra ai pulsanti principali, se `overdueTasks(items, now).length > 0`, appare una fascia cliccabile "⚠️ N promemoria scaduti" nello stesso stile discreto degli altri contatori. Click → `goCalendar(); openSide({ kind: 'todo' })` (stesso pattern già usato da `goArrivi`). Il conteggio si ricalcola ogni 60s con un piccolo `setInterval` locale, così resta corretto anche ad app aperta senza bisogno di notifiche OS.
 
@@ -61,7 +75,7 @@ export const overdueTasks = (tasks: BookingTask[], now: Date): BookingTask[] =>
 
 - [periodicSync.test.ts](../../../app/tests/lib/sw/periodicSync.test.ts): con N task scaduti, `showNotification` chiamato una sola volta con titolo/corpo aggregato e `tag: 'overdue-digest'`; tutti gli N task marcati `shown`.
 - [foregroundScheduler.test.ts](../../../app/tests/lib/notifications/foregroundScheduler.test.ts): rimosso insieme al modulo.
-- Nuovo `overdueTasks.test.ts`: casi base (task scaduto/non scaduto/done/deletedAt).
+- Nuovo `overdueTasks.test.ts`: casi base (task scaduto/non scaduto/done/deletedAt) + casi di revisione finale (servizio non ordinato escluso, servizio ordinato incluso, scaduto da più/meno di 30 giorni).
 - Nuovo test minimo per `TodoPanel`: la sezione scaduti compare con i task giusti; click sulla checkbox chiama `toggleDone`.
 - Nuovo test minimo per `Home`: banner assente con N=0, presente con N>0, click naviga+apre il pannello.
 - Suite completa (`npx vitest run`) e `tsc --noEmit` verdi a fine lavoro.
