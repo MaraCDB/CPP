@@ -46,4 +46,34 @@ describe('firebase db', () => {
     await removeDoc('u1', 'bookings', 'b1');
     expect(mockDeleteDoc).toHaveBeenCalled();
   });
+
+  it('subscribeUserSettings wires onSnapshot on the root user doc', async () => {
+    const { subscribeUserSettings } = await import('../../../src/lib/firebase/db');
+    const cb = vi.fn();
+    let snapHandler: ((s: { data: () => unknown }) => void) | null = null;
+    mockOnSnapshot.mockImplementation((_ref, h) => { snapHandler = h; return () => {}; });
+    subscribeUserSettings('u1', cb);
+    snapHandler?.({ data: () => ({ googleCalendarId: 'cal1', calendarSyncEnabled: true }) });
+    expect(cb).toHaveBeenCalledWith({ googleCalendarId: 'cal1', calendarSyncEnabled: true });
+  });
+
+  it('subscribeUserSettings passes empty object when doc has no data', async () => {
+    const { subscribeUserSettings } = await import('../../../src/lib/firebase/db');
+    const cb = vi.fn();
+    let snapHandler: ((s: { data: () => unknown }) => void) | null = null;
+    mockOnSnapshot.mockImplementation((_ref, h) => { snapHandler = h; return () => {}; });
+    subscribeUserSettings('u1', cb);
+    snapHandler?.({ data: () => undefined });
+    expect(cb).toHaveBeenCalledWith({});
+  });
+
+  it('updateUserSettings writes via setDoc with merge', async () => {
+    const { updateUserSettings } = await import('../../../src/lib/firebase/db');
+    await updateUserSettings('u1', { calendarSyncEnabled: false });
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      { calendarSyncEnabled: false },
+      { merge: true },
+    );
+  });
 });
