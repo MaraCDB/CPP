@@ -107,7 +107,7 @@ export const MonthGoogleView = () => {
   }
 
   return (
-    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="mg-swipe" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="mg">
         <div className="mg-head">
           {['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(d => <div key={d}>{d}</div>)}
