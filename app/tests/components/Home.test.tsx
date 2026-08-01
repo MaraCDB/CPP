@@ -34,7 +34,7 @@ describe('Home', () => {
 
   const overdueTask = (over: Partial<BookingTask>): BookingTask => ({
     id: 't1', bookingId: 'b1', templateId: null, title: 'Richiedi documenti',
-    dueAt: '2020-01-01T08:00:00.000Z', done: false, notify: true,
+    dueAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(), done: false, notify: true,
     notificationStatus: 'pending', isService: false,
     createdAt: '2020-01-01T00:00:00.000Z', updatedAt: '2020-01-01T00:00:00.000Z',
     ...over,
