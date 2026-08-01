@@ -14,12 +14,14 @@ export const CalendarPage = () => {
   const { side, modal, closeSide, closeModal } = useUI();
 
   return (
-    <>
-      <Topbar />
-      <main className="p-3 md:p-5">
-        {vista === 'mese' ? <MonthGoogleView /> : <VerticalGanttView />}
-      </main>
-      <BottomBar />
+    <div className="calendar-shell">
+      <div className="calendar-main">
+        <Topbar />
+        <main className="p-3 md:p-5">
+          {vista === 'mese' ? <MonthGoogleView /> : <VerticalGanttView />}
+        </main>
+        <BottomBar />
+      </div>
 
       {side?.kind === 'todo' && <TodoPanel onClose={closeSide} />}
       {side?.kind === 'arrivi' && <ArrivalsPanel onClose={closeSide} />}
@@ -27,6 +29,6 @@ export const CalendarPage = () => {
 
       {modal?.kind === 'booking' && <BookingForm id={modal.id} prefillCheckin={modal.prefillCheckin} onClose={closeModal} />}
       {modal?.kind === 'closure' && <ClosureForm id={modal.id} onClose={closeModal} />}
-    </>
+    </div>
   );
 };
