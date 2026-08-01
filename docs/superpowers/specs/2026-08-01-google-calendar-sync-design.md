@@ -77,8 +77,10 @@ Tutte le chiamate sono no-op se `calendarSyncEnabled` è false o `googleCalendar
 
 ### Chiusura
 
-- **summary**: `Chiusura {camera}`.
-- **start.date / end.date**: `start` / `end` (all-day).
+`Chiusura` non ha un campo `camera` nel modello dati (`src/types.ts`) — rappresenta sempre una chiusura dell'intera struttura, non di una singola stanza.
+
+- **summary**: `Struttura chiusa`.
+- **start.date**: `start`. **end.date**: `iso(addDays(parseISO(end), 1))` — `end` in `Chiusura` è inclusivo (ultimo giorno di chiusura), mentre Google Calendar richiede `end.date` esclusivo per gli eventi all-day; stessa conversione già usata in `lib/conflicts.ts:37`. Usare sempre l'helper `iso()` per la stringa risultante, mai `toISOString().slice(0,10)` (produce UTC e rompe le date locali).
 - **description**: `note`, se presente; altrimenti vuota.
 
 ## Error handling & retry
