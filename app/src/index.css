@@ -282,6 +282,10 @@
       height:100vh;width:min(380px,34vw);flex:0 0 auto;
       transform:none;box-shadow:none;border-left:1px solid var(--line);
     }
+    /* in vista Mese, topbar e bottombar seguono la stessa larghezza del calendario
+       (.mg, 760px) invece di restare a tutta larghezza con i pulsanti sparsi */
+    .calendar-main-narrow #topbar{max-width:760px}
+    .calendar-main-narrow .bottombar{max-width:760px}
   }
 
   /* ============ BOTTOMBAR ============ */

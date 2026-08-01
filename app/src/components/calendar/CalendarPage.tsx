@@ -15,7 +15,7 @@ export const CalendarPage = () => {
 
   return (
     <div className="calendar-shell">
-      <div className="calendar-main">
+      <div className={'calendar-main' + (vista === 'mese' ? ' calendar-main-narrow' : '')}>
         <Topbar />
         <main className="p-3 md:p-5">
           {vista === 'mese' ? <MonthGoogleView /> : <VerticalGanttView />}
