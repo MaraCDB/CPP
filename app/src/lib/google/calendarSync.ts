@@ -1,6 +1,8 @@
 import type { Prenotazione, Chiusura } from '../../types';
 import { iso, parseISO, addDays } from '../date';
 import { useAuth } from '../../store/auth';
+import { useCalendarSettings } from '../../store/calendarSettings';
+import { enqueue, listQueue, removeFromQueue } from './calendarQueue';
 
 const BASE = 'https://www.googleapis.com/calendar/v3';
 
@@ -105,4 +107,69 @@ export const deleteEventByCdbId = async (calendarId: string, cdbId: string): Pro
   });
   if (res.status === 401 || res.status === 403) throw new CalendarScopeError();
   if (!res.ok && res.status !== 410) throw new Error(`Calendar event delete ${res.status}: ${await res.text()}`);
+};
+
+export const syncBookingToCalendar = async (booking: Prenotazione): Promise<void> => {
+  const { calendarSyncEnabled, googleCalendarId } = useCalendarSettings.getState();
+  if (!calendarSyncEnabled || !googleCalendarId) return;
+  try {
+    await upsertEvent(googleCalendarId, buildBookingEvent(booking));
+  } catch (e) {
+    if (!(e instanceof CalendarScopeError)) enqueue('booking', booking.id, 'upsert');
+  }
+};
+
+export const syncClosureToCalendar = async (closure: Chiusura): Promise<void> => {
+  const { calendarSyncEnabled, googleCalendarId } = useCalendarSettings.getState();
+  if (!calendarSyncEnabled || !googleCalendarId) return;
+  try {
+    await upsertEvent(googleCalendarId, buildClosureEvent(closure));
+  } catch (e) {
+    if (!(e instanceof CalendarScopeError)) enqueue('closure', closure.id, 'upsert');
+  }
+};
+
+export const deleteBookingFromCalendar = async (id: string): Promise<void> => {
+  const { calendarSyncEnabled, googleCalendarId } = useCalendarSettings.getState();
+  if (!calendarSyncEnabled || !googleCalendarId) return;
+  try {
+    await deleteEventByCdbId(googleCalendarId, id);
+  } catch (e) {
+    if (!(e instanceof CalendarScopeError)) enqueue('booking', id, 'delete');
+  }
+};
+
+export const deleteClosureFromCalendar = async (id: string): Promise<void> => {
+  const { calendarSyncEnabled, googleCalendarId } = useCalendarSettings.getState();
+  if (!calendarSyncEnabled || !googleCalendarId) return;
+  try {
+    await deleteEventByCdbId(googleCalendarId, id);
+  } catch (e) {
+    if (!(e instanceof CalendarScopeError)) enqueue('closure', id, 'delete');
+  }
+};
+
+export const processCalendarQueue = async (
+  getBooking: (id: string) => Prenotazione | undefined,
+  getClosure: (id: string) => Chiusura | undefined,
+): Promise<void> => {
+  const { calendarSyncEnabled, googleCalendarId } = useCalendarSettings.getState();
+  if (!calendarSyncEnabled || !googleCalendarId) return;
+  for (const op of listQueue()) {
+    try {
+      if (op.action === 'delete') {
+        await deleteEventByCdbId(googleCalendarId, op.id);
+      } else if (op.kind === 'booking') {
+        const b = getBooking(op.id);
+        if (b) await upsertEvent(googleCalendarId, buildBookingEvent(b));
+      } else {
+        const c = getClosure(op.id);
+        if (c) await upsertEvent(googleCalendarId, buildClosureEvent(c));
+      }
+      removeFromQueue(op.kind, op.id);
+    } catch (e) {
+      if (e instanceof CalendarScopeError) return;
+      // altri errori: lascia in coda, prova il prossimo
+    }
+  }
 };

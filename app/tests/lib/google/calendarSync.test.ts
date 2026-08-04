@@ -208,3 +208,129 @@ describe('deleteEventByCdbId', () => {
     await expect(deleteEventByCdbId('cal1', 'b1')).resolves.toBeUndefined();
   });
 });
+
+const { mockSettings } = vi.hoisted(() => ({
+  mockSettings: { googleCalendarId: null as string | null, calendarSyncEnabled: false },
+}));
+vi.mock('../../../src/store/calendarSettings', () => ({
+  useCalendarSettings: { getState: () => mockSettings },
+}));
+
+describe('syncBookingToCalendar', () => {
+  beforeEach(() => {
+    mockSettings.googleCalendarId = 'cal1';
+    mockSettings.calendarSyncEnabled = true;
+    localStorage.clear();
+  });
+
+  it('non fa nulla se il sync è disabilitato', async () => {
+    mockSettings.calendarSyncEnabled = false;
+    const { syncBookingToCalendar } = await import('../../../src/lib/google/calendarSync');
+    await syncBookingToCalendar(booking());
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('non fa nulla se nessun calendario è collegato', async () => {
+    mockSettings.googleCalendarId = null;
+    const { syncBookingToCalendar } = await import('../../../src/lib/google/calendarSync');
+    await syncBookingToCalendar(booking());
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('chiama upsertEvent quando sync abilitato', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'evt1' }), { status: 200 }));
+    const { syncBookingToCalendar } = await import('../../../src/lib/google/calendarSync');
+    await syncBookingToCalendar(booking());
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('accoda l\'operazione se il push fallisce per errore di rete (non scope)', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('network down'));
+    const { syncBookingToCalendar } = await import('../../../src/lib/google/calendarSync');
+    const { listQueue } = await import('../../../src/lib/google/calendarQueue');
+    await syncBookingToCalendar(booking());
+    expect(listQueue()).toEqual([{ kind: 'booking', id: 'b1', action: 'upsert' }]);
+  });
+
+  it('non accoda se l\'errore è di scope (serve nuovo login, non un retry automatico)', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('forbidden', { status: 403 }));
+    const { syncBookingToCalendar } = await import('../../../src/lib/google/calendarSync');
+    const { listQueue } = await import('../../../src/lib/google/calendarQueue');
+    await syncBookingToCalendar(booking());
+    expect(listQueue()).toEqual([]);
+  });
+});
+
+describe('deleteBookingFromCalendar', () => {
+  beforeEach(() => {
+    mockSettings.googleCalendarId = 'cal1';
+    mockSettings.calendarSyncEnabled = true;
+    localStorage.clear();
+  });
+
+  it('chiama deleteEventByCdbId ed elimina l\'evento', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: 'evt1' }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const { deleteBookingFromCalendar } = await import('../../../src/lib/google/calendarSync');
+    await deleteBookingFromCalendar('b1');
+    expect(fetchMock).toHaveBeenNthCalledWith(2,
+      expect.stringMatching(/\/events\/evt1$/),
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
+  it('accoda un\'azione delete se fallisce', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('network down'));
+    const { deleteBookingFromCalendar } = await import('../../../src/lib/google/calendarSync');
+    const { listQueue } = await import('../../../src/lib/google/calendarQueue');
+    await deleteBookingFromCalendar('b1');
+    expect(listQueue()).toEqual([{ kind: 'booking', id: 'b1', action: 'delete' }]);
+  });
+});
+
+describe('processCalendarQueue', () => {
+  beforeEach(() => {
+    mockSettings.googleCalendarId = 'cal1';
+    mockSettings.calendarSyncEnabled = true;
+    localStorage.clear();
+  });
+
+  it('rilavora un upsert pendente e lo rimuove dalla coda se riesce', async () => {
+    const { enqueue } = await import('../../../src/lib/google/calendarQueue');
+    enqueue('booking', 'b1', 'upsert');
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'evt1' }), { status: 200 }));
+    const { processCalendarQueue } = await import('../../../src/lib/google/calendarSync');
+    const { listQueue } = await import('../../../src/lib/google/calendarQueue');
+    await processCalendarQueue(id => id === 'b1' ? booking() : undefined, () => undefined);
+    expect(listQueue()).toEqual([]);
+  });
+
+  it('lascia l\'operazione in coda se il retry fallisce ancora', async () => {
+    const { enqueue } = await import('../../../src/lib/google/calendarQueue');
+    enqueue('booking', 'b1', 'upsert');
+    fetchMock.mockRejectedValueOnce(new Error('still down'));
+    const { processCalendarQueue } = await import('../../../src/lib/google/calendarSync');
+    const { listQueue } = await import('../../../src/lib/google/calendarQueue');
+    await processCalendarQueue(id => id === 'b1' ? booking() : undefined, () => undefined);
+    expect(listQueue()).toEqual([{ kind: 'booking', id: 'b1', action: 'upsert' }]);
+  });
+
+  it('interrompe il giro (senza svuotare gli altri) su CalendarScopeError', async () => {
+    const { enqueue } = await import('../../../src/lib/google/calendarQueue');
+    enqueue('booking', 'b1', 'upsert');
+    enqueue('booking', 'b2', 'upsert');
+    fetchMock.mockResolvedValueOnce(new Response('forbidden', { status: 403 }));
+    const { processCalendarQueue } = await import('../../../src/lib/google/calendarSync');
+    const { listQueue } = await import('../../../src/lib/google/calendarQueue');
+    await processCalendarQueue(
+      id => id === 'b1' ? booking({ id: 'b1' }) : id === 'b2' ? booking({ id: 'b2' }) : undefined,
+      () => undefined,
+    );
+    expect(listQueue()).toHaveLength(2); // nessuna delle due processata: si ferma al primo scope error
+  });
+});
