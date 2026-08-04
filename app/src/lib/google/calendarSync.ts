@@ -1,5 +1,18 @@
 import type { Prenotazione, Chiusura } from '../../types';
 import { iso, parseISO, addDays } from '../date';
+import { useAuth } from '../../store/auth';
+
+const BASE = 'https://www.googleapis.com/calendar/v3';
+
+export class CalendarScopeError extends Error {
+  constructor(msg = 'Missing Calendar scope or token expired') { super(msg); this.name = 'CalendarScopeError'; }
+}
+
+const token = (): string => {
+  const t = useAuth.getState().googleAccessToken;
+  if (!t) throw new CalendarScopeError('Not authenticated for Calendar');
+  return t;
+};
 
 export interface CalendarEventBody {
   summary: string;
@@ -8,6 +21,31 @@ export interface CalendarEventBody {
   end: { date: string };
   extendedProperties: { private: { cdb_id: string } };
 }
+
+export interface GoogleCalendarListEntry {
+  id: string;
+  summary: string;
+}
+
+export const listCalendars = async (): Promise<GoogleCalendarListEntry[]> => {
+  const res = await fetch(`${BASE}/users/me/calendarList`, {
+    headers: { Authorization: `Bearer ${token()}` },
+  });
+  if (res.status === 401 || res.status === 403) throw new CalendarScopeError();
+  if (!res.ok) throw new Error(`Calendar list ${res.status}: ${await res.text()}`);
+  const j = (await res.json()) as { items: { id: string; summary: string }[] };
+  return j.items.map(i => ({ id: i.id, summary: i.summary }));
+};
+
+export const findEventIdByCdbId = async (calendarId: string, cdbId: string): Promise<string | null> => {
+  const url = `${BASE}/calendars/${encodeURIComponent(calendarId)}/events?` +
+    `privateExtendedProperty=${encodeURIComponent(`cdb_id=${cdbId}`)}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token()}` } });
+  if (res.status === 401 || res.status === 403) throw new CalendarScopeError();
+  if (!res.ok) throw new Error(`Calendar event lookup ${res.status}: ${await res.text()}`);
+  const j = (await res.json()) as { items: { id: string }[] };
+  return j.items[0]?.id ?? null;
+};
 
 const CAMERA_LABEL: Record<Prenotazione['camera'], string> = {
   lampone: 'Lampone',

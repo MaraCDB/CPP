@@ -1,6 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildBookingEvent, buildClosureEvent } from '../../../src/lib/google/calendarSync';
 import type { Prenotazione, Chiusura } from '../../../src/types';
+
+const fetchMock = vi.fn();
+beforeEach(() => {
+  vi.stubGlobal('fetch', fetchMock);
+  fetchMock.mockReset();
+});
+
+vi.mock('../../../src/store/auth', () => ({
+  useAuth: { getState: () => ({ googleAccessToken: 'tok' }) },
+}));
 
 const booking = (over: Partial<Prenotazione> = {}): Prenotazione => ({
   id: 'b1', camera: 'lampone', checkin: '2026-08-10', checkout: '2026-08-14',
@@ -80,5 +90,49 @@ describe('buildClosureEvent', () => {
   it('imposta extendedProperties.private.cdb_id sull\'id chiusura', () => {
     const e = buildClosureEvent(closure());
     expect(e.extendedProperties.private.cdb_id).toBe('c1');
+  });
+});
+
+describe('listCalendars', () => {
+  it('GET su calendarList e mappa id/summary', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(
+      JSON.stringify({ items: [{ id: 'cal1', summary: 'Casa' }] }),
+      { status: 200 },
+    ));
+    const { listCalendars } = await import('../../../src/lib/google/calendarSync');
+    const list = await listCalendars();
+    expect(list).toEqual([{ id: 'cal1', summary: 'Casa' }]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/users/me/calendarList'),
+      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer tok' }) }),
+    );
+  });
+
+  it('lancia CalendarScopeError su 403', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('forbidden', { status: 403 }));
+    const { listCalendars, CalendarScopeError } = await import('../../../src/lib/google/calendarSync');
+    await expect(listCalendars()).rejects.toThrow(CalendarScopeError);
+  });
+});
+
+describe('findEventIdByCdbId', () => {
+  it('trova l\'id evento tramite privateExtendedProperty', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(
+      JSON.stringify({ items: [{ id: 'evt1' }] }),
+      { status: 200 },
+    ));
+    const { findEventIdByCdbId } = await import('../../../src/lib/google/calendarSync');
+    const id = await findEventIdByCdbId('cal1', 'b1');
+    expect(id).toBe('evt1');
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('privateExtendedProperty=cdb_id%3Db1'),
+      expect.anything(),
+    );
+  });
+
+  it('ritorna null se nessun evento trovato', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }));
+    const { findEventIdByCdbId } = await import('../../../src/lib/google/calendarSync');
+    expect(await findEventIdByCdbId('cal1', 'b1')).toBeNull();
   });
 });
