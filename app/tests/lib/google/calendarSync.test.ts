@@ -136,3 +136,75 @@ describe('findEventIdByCdbId', () => {
     expect(await findEventIdByCdbId('cal1', 'b1')).toBeNull();
   });
 });
+
+describe('upsertEvent', () => {
+  it('fa POST (insert) quando nessun evento esiste per cdb_id', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 })) // lookup
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'evt1' }), { status: 200 })); // insert
+    const { upsertEvent } = await import('../../../src/lib/google/calendarSync');
+    await upsertEvent('cal1', {
+      summary: 'x', start: { date: '2026-08-10' }, end: { date: '2026-08-14' },
+      extendedProperties: { private: { cdb_id: 'b1' } },
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2,
+      expect.stringMatching(/\/calendars\/cal1\/events$/),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('fa PATCH (update) quando un evento esiste già per cdb_id', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: 'evt1' }] }), { status: 200 })) // lookup
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'evt1' }), { status: 200 })); // patch
+    const { upsertEvent } = await import('../../../src/lib/google/calendarSync');
+    await upsertEvent('cal1', {
+      summary: 'x', start: { date: '2026-08-10' }, end: { date: '2026-08-14' },
+      extendedProperties: { private: { cdb_id: 'b1' } },
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2,
+      expect.stringMatching(/\/calendars\/cal1\/events\/evt1$/),
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+  });
+
+  it('lancia CalendarScopeError se il PATCH/POST risponde 401', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response('unauthorized', { status: 401 }));
+    const { upsertEvent, CalendarScopeError } = await import('../../../src/lib/google/calendarSync');
+    await expect(upsertEvent('cal1', {
+      summary: 'x', start: { date: '2026-08-10' }, end: { date: '2026-08-14' },
+      extendedProperties: { private: { cdb_id: 'b1' } },
+    })).rejects.toThrow(CalendarScopeError);
+  });
+});
+
+describe('deleteEventByCdbId', () => {
+  it('non fa nulla se nessun evento trovato', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }));
+    const { deleteEventByCdbId } = await import('../../../src/lib/google/calendarSync');
+    await deleteEventByCdbId('cal1', 'b1');
+    expect(fetchMock).toHaveBeenCalledTimes(1); // solo la lookup, nessuna DELETE
+  });
+
+  it('fa DELETE sull\'evento trovato', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: 'evt1' }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const { deleteEventByCdbId } = await import('../../../src/lib/google/calendarSync');
+    await deleteEventByCdbId('cal1', 'b1');
+    expect(fetchMock).toHaveBeenNthCalledWith(2,
+      expect.stringMatching(/\/calendars\/cal1\/events\/evt1$/),
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
+  it('tratta 410 (Gone) come successo (già cancellato)', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: 'evt1' }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response('gone', { status: 410 }));
+    const { deleteEventByCdbId } = await import('../../../src/lib/google/calendarSync');
+    await expect(deleteEventByCdbId('cal1', 'b1')).resolves.toBeUndefined();
+  });
+});

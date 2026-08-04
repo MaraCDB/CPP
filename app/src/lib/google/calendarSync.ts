@@ -81,3 +81,28 @@ export const buildClosureEvent = (c: Chiusura): CalendarEventBody => ({
   end: { date: iso(addDays(parseISO(c.end), 1)) },
   extendedProperties: { private: { cdb_id: c.id } },
 });
+
+export const upsertEvent = async (calendarId: string, body: CalendarEventBody): Promise<void> => {
+  const existingId = await findEventIdByCdbId(calendarId, body.extendedProperties.private.cdb_id);
+  const url = existingId
+    ? `${BASE}/calendars/${encodeURIComponent(calendarId)}/events/${existingId}`
+    : `${BASE}/calendars/${encodeURIComponent(calendarId)}/events`;
+  const res = await fetch(url, {
+    method: existingId ? 'PATCH' : 'POST',
+    headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401 || res.status === 403) throw new CalendarScopeError();
+  if (!res.ok) throw new Error(`Calendar event upsert ${res.status}: ${await res.text()}`);
+};
+
+export const deleteEventByCdbId = async (calendarId: string, cdbId: string): Promise<void> => {
+  const id = await findEventIdByCdbId(calendarId, cdbId);
+  if (!id) return;
+  const res = await fetch(`${BASE}/calendars/${encodeURIComponent(calendarId)}/events/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token()}` },
+  });
+  if (res.status === 401 || res.status === 403) throw new CalendarScopeError();
+  if (!res.ok && res.status !== 410) throw new Error(`Calendar event delete ${res.status}: ${await res.text()}`);
+};
