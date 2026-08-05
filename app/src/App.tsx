@@ -9,6 +9,7 @@ import { NotificationOnboarding } from './components/NotificationOnboarding';
 import { auth, initAuthListener } from './lib/firebase/auth';
 import { initPersistence } from './lib/firebase/db';
 import { useFirestoreSync } from './hooks/useFirestoreSync';
+import { useCalendarSyncQueue } from './hooks/useCalendarSyncQueue';
 import { useTemplates } from './store/templates';
 import { useTasks } from './store/tasks';
 import { idbGet } from './lib/idb';
@@ -58,6 +59,7 @@ export default function App() {
 
   const uid = user ? auth.currentUser?.uid ?? null : null;
   useFirestoreSync(uid);
+  useCalendarSyncQueue(uid);
 
   if (!user) return <SignIn />;
   return (
