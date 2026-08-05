@@ -3,6 +3,7 @@ import type { Chiusura } from '../types';
 import { uid } from '../lib/id';
 import { upsertDoc, removeDoc } from '../lib/firebase/db';
 import { auth } from '../lib/firebase/auth';
+import { syncClosureToCalendar, deleteClosureFromCalendar } from '../lib/google/calendarSync';
 
 const getUid = (): string | null => auth.currentUser?.uid ?? null;
 
@@ -20,6 +21,7 @@ export const useClosures = create<State>((set, get) => ({
     set({ items: [...get().items, item] });
     const u = getUid();
     if (u) void upsertDoc(u, 'closures', item.id, item);
+    void syncClosureToCalendar(item);
     return item;
   },
   update: (id, patch) => {
@@ -28,11 +30,13 @@ export const useClosures = create<State>((set, get) => ({
     if (updated) {
       const u = getUid();
       if (u) void upsertDoc(u, 'closures', updated.id, updated);
+      void syncClosureToCalendar(updated);
     }
   },
   remove: (id) => {
     set({ items: get().items.filter(c => c.id !== id) });
     const u = getUid();
     if (u) void removeDoc(u, 'closures', id);
+    void deleteClosureFromCalendar(id);
   },
 }));

@@ -6,6 +6,14 @@ vi.mock('../../src/lib/firebase/db', () => ({
   upsertDoc: vi.fn().mockResolvedValue(undefined),
   removeDoc: vi.fn().mockResolvedValue(undefined),
 }));
+const { mockSyncBooking, mockDeleteBooking } = vi.hoisted(() => ({
+  mockSyncBooking: vi.fn().mockResolvedValue(undefined),
+  mockDeleteBooking: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../../src/lib/google/calendarSync', () => ({
+  syncBookingToCalendar: mockSyncBooking,
+  deleteBookingFromCalendar: mockDeleteBooking,
+}));
 
 import { useBookings } from '../../src/store/bookings';
 
@@ -54,5 +62,40 @@ describe('bookings store — contact link persistence', () => {
     const updated = useBookings.getState().items.find(x => x.id === b.id);
     expect(updated?.contattoResourceName).toBe('people/c99');
     expect(updated?.contattoEmail).toBe('a@b.it');
+  });
+});
+
+describe('bookings store — calendar sync hook', () => {
+  beforeEach(() => {
+    useBookings.setState({ items: [] });
+    mockSyncBooking.mockClear();
+    mockDeleteBooking.mockClear();
+  });
+
+  it('add chiama syncBookingToCalendar con il booking creato', () => {
+    const b = useBookings.getState().add({
+      camera: 'lampone', checkin: '2026-08-10', checkout: '2026-08-14',
+      stato: 'confermato', nome: 'Rossi',
+    });
+    expect(mockSyncBooking).toHaveBeenCalledWith(expect.objectContaining({ id: b.id }));
+  });
+
+  it('update chiama syncBookingToCalendar con il booking aggiornato', () => {
+    const b = useBookings.getState().add({
+      camera: 'lampone', checkin: '2026-08-10', checkout: '2026-08-14',
+      stato: 'proposta', nome: 'Rossi',
+    });
+    mockSyncBooking.mockClear();
+    useBookings.getState().update(b.id, { stato: 'confermato' });
+    expect(mockSyncBooking).toHaveBeenCalledWith(expect.objectContaining({ id: b.id, stato: 'confermato' }));
+  });
+
+  it('remove chiama deleteBookingFromCalendar con l\'id rimosso', () => {
+    const b = useBookings.getState().add({
+      camera: 'lampone', checkin: '2026-08-10', checkout: '2026-08-14',
+      stato: 'confermato', nome: 'Rossi',
+    });
+    useBookings.getState().remove(b.id);
+    expect(mockDeleteBooking).toHaveBeenCalledWith(b.id);
   });
 });

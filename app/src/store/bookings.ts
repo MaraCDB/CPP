@@ -3,6 +3,7 @@ import type { Prenotazione } from '../types';
 import { uid } from '../lib/id';
 import { upsertDoc, removeDoc } from '../lib/firebase/db';
 import { auth } from '../lib/firebase/auth';
+import { syncBookingToCalendar, deleteBookingFromCalendar } from '../lib/google/calendarSync';
 
 const getUid = (): string | null => auth.currentUser?.uid ?? null;
 
@@ -56,6 +57,7 @@ export const useBookings = create<State>((set, get) => ({
     const u = getUid();
     if (u) void upsertDoc(u, 'bookings', item.id, item);
     void onBookingCreated(item);
+    void syncBookingToCalendar(item);
     return item;
   },
   update: (id, patch) => {
@@ -65,6 +67,7 @@ export const useBookings = create<State>((set, get) => ({
     if (updated) {
       const u = getUid();
       if (u) void upsertDoc(u, 'bookings', updated.id, updated);
+      void syncBookingToCalendar(updated);
       if (old) void onBookingUpdated(old, updated);
     }
   },
@@ -73,5 +76,6 @@ export const useBookings = create<State>((set, get) => ({
     const u = getUid();
     if (u) void removeDoc(u, 'bookings', id);
     void onBookingRemoved(id);
+    void deleteBookingFromCalendar(id);
   },
 }));
