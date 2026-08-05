@@ -79,3 +79,44 @@ App directory: `app/`
 
 - 40 tests across 7 files, all passing (as of Tasks 13–14 completion)
 - `npx tsc --noEmit` — zero errors
+
+---
+
+## Google Calendar sync — final fix wave (2026-08-05)
+
+Fixed 5 findings from the whole-branch review of the Google Calendar sync feature
+(11 tasks, already merged). See
+`.superpowers/sdd/2026-08-01-google-calendar-sync/final-fix-report.md` for full detail.
+
+- **Finding 1:** `calendarSync.ts`'s 4 orchestration functions (`syncBookingToCalendar`,
+  `syncClosureToCalendar`, `deleteBookingFromCalendar`, `deleteClosureFromCalendar`) now
+  enqueue unconditionally on ANY catch (previously suppressed enqueue for
+  `CalendarScopeError`, silently dropping expired-token failures forever).
+- **Finding 2:** Root cause is `googleAccessToken` is only set in `signIn()`, never restored
+  on reload by `onAuthStateChanged` (out of scope to fix — shared with Drive/People API).
+  Added a scoped workaround: `runCalendarSyncQueueNow()` exported from
+  `useCalendarSyncQueue.ts`, and a "Riconnetti Google" button in `CalendarSyncSection.tsx`
+  (visible whenever connected) that calls `signIn()` again + drains the queue.
+- **Finding 3:** `useCalendarSyncQueue`'s effect now depends on `useCalendarSettings`'s
+  `googleCalendarId`/`calendarSyncEnabled` read via the reactive selector-hook form (not
+  `.getState()`), so it re-fires once Firestore's async `onSnapshot` hydration populates
+  them post-mount — previously it only ran once at `[uid]`, always saw pre-hydration
+  null/false, and silently never drained anything until an `online` event.
+- **Finding 4:** `processCalendarQueue` no longer dequeues an `upsert` op when
+  `getBooking`/`getClosure` returns `undefined` (entity not yet in store) — only dequeues on
+  actual success (or unconditionally for `delete`, since a gone entity is a fine delete
+  outcome). Relies on `calendarQueue.ts`'s existing `kind:id` dedup (last-write-wins,
+  untouched) to avoid staleness if the entity is deleted later.
+- **Finding 5:** Selecting a calendar in `CalendarSyncSection.tsx` now backfills — enqueues
+  an upsert for every existing booking/closure and immediately calls
+  `runCalendarSyncQueueNow()` — so pre-existing bookings appear on the shared calendar
+  without needing individual edits.
+- Constraint respected: `calendarSync.ts` still never imports `store/bookings.ts` /
+  `store/closures.ts` (no circular import); Firebase Auth persistence architecture
+  untouched.
+- Full suite: 227/227 tests pass, `tsc --noEmit` clean, `eslint .` clean.
+- One test-mock gotcha found while verifying: `CalendarSyncSection.test.tsx`'s mock of
+  `lib/firebase/auth` must also export `auth: { currentUser: null }` — `calendarSettings.ts`
+  reads `auth.currentUser` too, and a mock missing it throws inside the click handler,
+  silently aborting the handler before reaching the new enqueue calls (looked like the
+  fix wasn't working; was actually just an incomplete mock).

@@ -254,12 +254,12 @@ describe('syncBookingToCalendar', () => {
     expect(listQueue()).toEqual([{ kind: 'booking', id: 'b1', action: 'upsert' }]);
   });
 
-  it('non accoda se l\'errore è di scope (serve nuovo login, non un retry automatico)', async () => {
+  it('accoda anche se l\'errore è di scope (ripartirà al prossimo login/reconnect)', async () => {
     fetchMock.mockResolvedValueOnce(new Response('forbidden', { status: 403 }));
     const { syncBookingToCalendar } = await import('../../../src/lib/google/calendarSync');
     const { listQueue } = await import('../../../src/lib/google/calendarQueue');
     await syncBookingToCalendar(booking());
-    expect(listQueue()).toEqual([]);
+    expect(listQueue()).toEqual([{ kind: 'booking', id: 'b1', action: 'upsert' }]);
   });
 });
 
@@ -332,5 +332,15 @@ describe('processCalendarQueue', () => {
       () => undefined,
     );
     expect(listQueue()).toHaveLength(2); // nessuna delle due processata: si ferma al primo scope error
+  });
+
+  it('lascia l\'upsert in coda se l\'entità non è (ancora) nello store, invece di scartarlo', async () => {
+    const { enqueue } = await import('../../../src/lib/google/calendarQueue');
+    enqueue('booking', 'b1', 'upsert');
+    const { processCalendarQueue } = await import('../../../src/lib/google/calendarSync');
+    const { listQueue } = await import('../../../src/lib/google/calendarQueue');
+    await processCalendarQueue(() => undefined, () => undefined);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(listQueue()).toEqual([{ kind: 'booking', id: 'b1', action: 'upsert' }]);
   });
 });

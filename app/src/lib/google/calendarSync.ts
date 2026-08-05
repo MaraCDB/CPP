@@ -114,8 +114,8 @@ export const syncBookingToCalendar = async (booking: Prenotazione): Promise<void
   if (!calendarSyncEnabled || !googleCalendarId) return;
   try {
     await upsertEvent(googleCalendarId, buildBookingEvent(booking));
-  } catch (e) {
-    if (!(e instanceof CalendarScopeError)) enqueue('booking', booking.id, 'upsert');
+  } catch {
+    enqueue('booking', booking.id, 'upsert');
   }
 };
 
@@ -124,8 +124,8 @@ export const syncClosureToCalendar = async (closure: Chiusura): Promise<void> =>
   if (!calendarSyncEnabled || !googleCalendarId) return;
   try {
     await upsertEvent(googleCalendarId, buildClosureEvent(closure));
-  } catch (e) {
-    if (!(e instanceof CalendarScopeError)) enqueue('closure', closure.id, 'upsert');
+  } catch {
+    enqueue('closure', closure.id, 'upsert');
   }
 };
 
@@ -134,8 +134,8 @@ export const deleteBookingFromCalendar = async (id: string): Promise<void> => {
   if (!calendarSyncEnabled || !googleCalendarId) return;
   try {
     await deleteEventByCdbId(googleCalendarId, id);
-  } catch (e) {
-    if (!(e instanceof CalendarScopeError)) enqueue('booking', id, 'delete');
+  } catch {
+    enqueue('booking', id, 'delete');
   }
 };
 
@@ -144,8 +144,8 @@ export const deleteClosureFromCalendar = async (id: string): Promise<void> => {
   if (!calendarSyncEnabled || !googleCalendarId) return;
   try {
     await deleteEventByCdbId(googleCalendarId, id);
-  } catch (e) {
-    if (!(e instanceof CalendarScopeError)) enqueue('closure', id, 'delete');
+  } catch {
+    enqueue('closure', id, 'delete');
   }
 };
 
@@ -159,14 +159,22 @@ export const processCalendarQueue = async (
     try {
       if (op.action === 'delete') {
         await deleteEventByCdbId(googleCalendarId, op.id);
+        removeFromQueue(op.kind, op.id);
       } else if (op.kind === 'booking') {
         const b = getBooking(op.id);
-        if (b) await upsertEvent(googleCalendarId, buildBookingEvent(b));
+        if (b) {
+          await upsertEvent(googleCalendarId, buildBookingEvent(b));
+          removeFromQueue(op.kind, op.id);
+        }
+        // entità non trovata (store non ancora idratato): lascia in coda per il prossimo giro
       } else {
         const c = getClosure(op.id);
-        if (c) await upsertEvent(googleCalendarId, buildClosureEvent(c));
+        if (c) {
+          await upsertEvent(googleCalendarId, buildClosureEvent(c));
+          removeFromQueue(op.kind, op.id);
+        }
+        // entità non trovata (store non ancora idratato): lascia in coda per il prossimo giro
       }
-      removeFromQueue(op.kind, op.id);
     } catch (e) {
       if (e instanceof CalendarScopeError) return;
       // altri errori: lascia in coda, prova il prossimo
