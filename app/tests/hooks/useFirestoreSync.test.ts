@@ -7,15 +7,19 @@ vi.mock('../../src/lib/firebase/db', () => ({
     subs.push(name);
     return () => { subs.splice(subs.indexOf(name), 1); };
   }),
+  subscribeUserSettings: vi.fn(() => {
+    subs.push('settings');
+    return () => { subs.splice(subs.indexOf('settings'), 1); };
+  }),
 }));
 
 beforeEach(() => { subs.length = 0; });
 
 describe('useFirestoreSync', () => {
-  it('subscribes 5 collections when uid is provided', async () => {
+  it('subscribes 5 collections and user settings when uid is provided', async () => {
     const { useFirestoreSync } = await import('../../src/hooks/useFirestoreSync');
     renderHook(() => useFirestoreSync('u1'));
-    expect(subs).toEqual(['bookings','closures','promemoria','tasks','templates']);
+    expect(subs).toEqual(['bookings','closures','promemoria','tasks','templates','settings']);
   });
 
   it('does nothing when uid is null', async () => {
@@ -29,7 +33,7 @@ describe('useFirestoreSync', () => {
     const { rerender } = renderHook(({ uid }: { uid: string | null }) => useFirestoreSync(uid), {
       initialProps: { uid: 'u1' },
     });
-    expect(subs.length).toBe(5);
+    expect(subs.length).toBe(6);
     rerender({ uid: null });
     expect(subs.length).toBe(0);
   });

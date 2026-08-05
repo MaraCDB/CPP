@@ -12,6 +12,7 @@ void setPersistence(auth, indexedDBLocalPersistence);
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/contacts');
 provider.addScope('https://www.googleapis.com/auth/drive.file');
+provider.addScope('https://www.googleapis.com/auth/calendar.events');
 
 const userToStore = (u: User) => ({
   email: u.email ?? '',

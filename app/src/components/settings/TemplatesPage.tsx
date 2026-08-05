@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTemplates } from '../../store/templates';
 import { GenerateRemindersButton } from './GenerateRemindersButton';
 import { AccountSection } from './AccountSection';
+import { CalendarSyncSection } from './CalendarSyncSection';
 import type { ReminderTemplate } from '../../types';
 import { buildZipBytes } from '../../lib/firebase/backup';
 import {
@@ -58,6 +59,8 @@ export const TemplatesPage = ({ onBack }: { onBack: () => void }) => {
       <GenerateRemindersButton />
 
       <BackupSection />
+
+      <CalendarSyncSection />
 
       <AccountSection />
 

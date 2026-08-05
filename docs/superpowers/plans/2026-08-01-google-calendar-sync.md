@@ -875,7 +875,9 @@ git commit -m "feat(calendar-sync): add localStorage retry queue for failed push
 Aggiungi in fondo a `tests/lib/google/calendarSync.test.ts`:
 
 ```ts
-const mockSettings = { googleCalendarId: null as string | null, calendarSyncEnabled: false };
+const { mockSettings } = vi.hoisted(() => ({
+  mockSettings: { googleCalendarId: null as string | null, calendarSyncEnabled: false },
+}));
 vi.mock('../../../src/store/calendarSettings', () => ({
   useCalendarSettings: { getState: () => mockSettings },
 }));
@@ -1113,8 +1115,10 @@ git commit -m "feat(calendar-sync): add sync orchestration with retry queue inte
 Aggiungi in `tests/store/bookings.test.ts`, in cima al file (accanto ai `vi.mock` già presenti):
 
 ```ts
-const mockSyncBooking = vi.fn().mockResolvedValue(undefined);
-const mockDeleteBooking = vi.fn().mockResolvedValue(undefined);
+const { mockSyncBooking, mockDeleteBooking } = vi.hoisted(() => ({
+  mockSyncBooking: vi.fn().mockResolvedValue(undefined),
+  mockDeleteBooking: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('../../src/lib/google/calendarSync', () => ({
   syncBookingToCalendar: mockSyncBooking,
   deleteBookingFromCalendar: mockDeleteBooking,
@@ -1212,8 +1216,10 @@ vi.mock('../../src/lib/firebase/db', () => ({
   upsertDoc: vi.fn().mockResolvedValue(undefined),
   removeDoc: vi.fn().mockResolvedValue(undefined),
 }));
-const mockSyncClosure = vi.fn().mockResolvedValue(undefined);
-const mockDeleteClosure = vi.fn().mockResolvedValue(undefined);
+const { mockSyncClosure, mockDeleteClosure } = vi.hoisted(() => ({
+  mockSyncClosure: vi.fn().mockResolvedValue(undefined),
+  mockDeleteClosure: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('../../src/lib/google/calendarSync', () => ({
   syncClosureToCalendar: mockSyncClosure,
   deleteClosureFromCalendar: mockDeleteClosure,
@@ -1298,7 +1304,9 @@ Crea `tests/hooks/useCalendarSyncQueue.test.ts`, stesso stile di `tests/hooks/us
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
-const mockProcessQueue = vi.fn().mockResolvedValue(undefined);
+const { mockProcessQueue } = vi.hoisted(() => ({
+  mockProcessQueue: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('../../src/lib/google/calendarSync', () => ({
   processCalendarQueue: mockProcessQueue,
 }));
@@ -1413,7 +1421,9 @@ Crea `tests/components/CalendarSyncSection.test.tsx` (stesso path flat di `tests
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-const mockListCalendars = vi.fn();
+const { mockListCalendars } = vi.hoisted(() => ({
+  mockListCalendars: vi.fn(),
+}));
 vi.mock('../../src/lib/google/calendarSync', () => ({
   listCalendars: mockListCalendars,
   CalendarScopeError: class CalendarScopeError extends Error {},

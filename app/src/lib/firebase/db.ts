@@ -52,3 +52,23 @@ export const removeDoc = (
 
 export const goOnline = (): Promise<void> => enableNetwork(db);
 export const goOffline = (): Promise<void> => disableNetwork(db);
+
+export interface UserSettings {
+  googleCalendarId?: string | null;
+  googleCalendarName?: string | null;
+  calendarSyncEnabled?: boolean;
+}
+
+export const subscribeUserSettings = (
+  uid: string,
+  cb: (settings: UserSettings) => void,
+): (() => void) => {
+  const ref = doc(db, 'users', uid);
+  return onSnapshot(ref, snap => {
+    cb((snap.data() as UserSettings | undefined) ?? {});
+  });
+};
+
+export const updateUserSettings = (
+  uid: string, patch: Partial<UserSettings>,
+): Promise<void> => setDoc(doc(db, 'users', uid), patch, { merge: true });
