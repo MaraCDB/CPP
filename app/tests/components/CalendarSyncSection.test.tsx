@@ -41,13 +41,20 @@ describe('CalendarSyncSection', () => {
   });
 
   it('mostra "Non connesso" quando nessun calendario è collegato', () => {
-    render(<CalendarSyncSection />);
+    render(<CalendarSyncSection onBack={() => {}} />);
     expect(screen.getByText(/Non connesso/i)).toBeInTheDocument();
+  });
+
+  it('bottone "← Indietro" chiama onBack', () => {
+    const onBack = vi.fn();
+    render(<CalendarSyncSection onBack={onBack} />);
+    fireEvent.click(screen.getByText('← Indietro'));
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   it('bottone "Connetti calendario" carica la lista e permette di scegliere', async () => {
     mockListCalendars.mockResolvedValueOnce([{ id: 'cal1', summary: 'Casa' }]);
-    render(<CalendarSyncSection />);
+    render(<CalendarSyncSection onBack={() => {}} />);
     fireEvent.click(screen.getByText(/Connetti calendario/i));
     await waitFor(() => expect(screen.getByText('Casa')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Casa'));
@@ -57,7 +64,7 @@ describe('CalendarSyncSection', () => {
 
   it('selezionare un calendario accoda tutte le prenotazioni/chiusure esistenti e svuota subito la coda', async () => {
     mockListCalendars.mockResolvedValueOnce([{ id: 'cal1', summary: 'Casa' }]);
-    render(<CalendarSyncSection />);
+    render(<CalendarSyncSection onBack={() => {}} />);
     fireEvent.click(screen.getByText(/Connetti calendario/i));
     await waitFor(() => expect(screen.getByText('Casa')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Casa'));
@@ -70,14 +77,14 @@ describe('CalendarSyncSection', () => {
 
   it('mostra "Connesso a «Casa»" e il toggle quando collegato', () => {
     useCalendarSettings.setState({ googleCalendarId: 'cal1', googleCalendarName: 'Casa', calendarSyncEnabled: true });
-    render(<CalendarSyncSection />);
+    render(<CalendarSyncSection onBack={() => {}} />);
     expect(screen.getByText(/Casa/)).toBeInTheDocument();
     expect(screen.getByRole('checkbox')).toBeChecked();
   });
 
   it('il toggle disabilita il sync senza scollegare', () => {
     useCalendarSettings.setState({ googleCalendarId: 'cal1', googleCalendarName: 'Casa', calendarSyncEnabled: true });
-    render(<CalendarSyncSection />);
+    render(<CalendarSyncSection onBack={() => {}} />);
     fireEvent.click(screen.getByRole('checkbox'));
     expect(useCalendarSettings.getState().calendarSyncEnabled).toBe(false);
     expect(useCalendarSettings.getState().googleCalendarId).toBe('cal1');
@@ -85,14 +92,14 @@ describe('CalendarSyncSection', () => {
 
   it('"Disconnetti" azzera il calendario collegato', () => {
     useCalendarSettings.setState({ googleCalendarId: 'cal1', googleCalendarName: 'Casa', calendarSyncEnabled: true });
-    render(<CalendarSyncSection />);
+    render(<CalendarSyncSection onBack={() => {}} />);
     fireEvent.click(screen.getByText(/Disconnetti/i));
     expect(useCalendarSettings.getState().googleCalendarId).toBeNull();
   });
 
   it('"Riconnetti Google" è visibile quando connesso e rifà il login e svuota la coda', async () => {
     useCalendarSettings.setState({ googleCalendarId: 'cal1', googleCalendarName: 'Casa', calendarSyncEnabled: true });
-    render(<CalendarSyncSection />);
+    render(<CalendarSyncSection onBack={() => {}} />);
     fireEvent.click(screen.getByText(/Riconnetti Google/i));
     await waitFor(() => expect(mockSignIn).toHaveBeenCalledTimes(1));
     expect(mockRunQueueNow).toHaveBeenCalledTimes(1);

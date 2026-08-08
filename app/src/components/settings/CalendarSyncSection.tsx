@@ -6,8 +6,9 @@ import { enqueue } from '../../lib/google/calendarQueue';
 import { useBookings } from '../../store/bookings';
 import { useClosures } from '../../store/closures';
 import { runCalendarSyncQueueNow } from '../../hooks/useCalendarSyncQueue';
+import { SettingsSubPage } from './SettingsSubPage';
 
-export const CalendarSyncSection = () => {
+export const CalendarSyncSection = ({ onBack }: { onBack: () => void }) => {
   const calendarId = useCalendarSettings(s => s.googleCalendarId);
   const calendarName = useCalendarSettings(s => s.googleCalendarName);
   const enabled = useCalendarSettings(s => s.calendarSyncEnabled);
@@ -42,8 +43,7 @@ export const CalendarSyncSection = () => {
   };
 
   return (
-    <section className="mt-6">
-      <h3 className="font-semibold mb-2">Sync Google Calendar</h3>
+    <SettingsSubPage title="Sync Google Calendar" onBack={onBack}>
       {calendarId ? (
         <>
           <div className="text-sm mb-2">Connesso a «{calendarName}»</div>
@@ -78,6 +78,6 @@ export const CalendarSyncSection = () => {
           ))}
         </ul>
       )}
-    </section>
+    </SettingsSubPage>
   );
 };

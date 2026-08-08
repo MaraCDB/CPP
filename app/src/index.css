@@ -284,6 +284,12 @@
   .calendar-main{display:flex;flex-direction:column;height:100dvh}
   .calendar-main #topbar,.calendar-main .bottombar{flex:0 0 auto}
   .calendar-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+
+  /* Stesso problema del calendario: lo scroll nativo di html/body non è affidabile
+     su mobile (rotellina/touch non muovono scrollTop anche con overflow:auto
+     regolare). height fissa + overflow-y:auto locale, non min-height, altrimenti
+     il contenuto in eccesso torna a dipendere dallo scroll di pagina rotto. */
+  .page-scroll{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
   @media(min-width:900px){
     .calendar-shell{display:flex;align-items:flex-start}
     .calendar-main{flex:1 1 auto;min-width:0}

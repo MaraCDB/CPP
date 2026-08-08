@@ -1,14 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTemplates } from '../../store/templates';
 import { GenerateRemindersButton } from './GenerateRemindersButton';
-import { AccountSection } from './AccountSection';
-import { CalendarSyncSection } from './CalendarSyncSection';
+import { SettingsSubPage } from './SettingsSubPage';
 import type { ReminderTemplate } from '../../types';
-import { buildZipBytes } from '../../lib/firebase/backup';
-import {
-  uploadToDrive, listDriveBackups, markBackupNow, lastBackupAt,
-  DriveScopeError, type DriveBackupMeta,
-} from '../../lib/google/driveBackup';
 
 const previewTitle = (title: string) =>
   title.replace('{adulti}', '2').replace('{bambini}', '1').replace('{oraArrivo}', '15:30');
@@ -21,12 +15,7 @@ export const TemplatesPage = ({ onBack }: { onBack: () => void }) => {
   const [editing, setEditing] = useState<ReminderTemplate | null>(null);
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <div className="flex items-center mb-4">
-        <button className="btn btn-ghost" onClick={onBack}>← Indietro</button>
-        <h2 className="font-semibold flex-1 text-center">Promemoria e template</h2>
-      </div>
-
+    <SettingsSubPage title="Promemoria e template" onBack={onBack}>
       <ul className="flex flex-col gap-2 mb-4">
         {[...items].sort((a, b) => a.sortOrder - b.sortOrder).map(t => (
           <li key={t.id} className="p-3 rounded-xl border" style={{ borderColor: 'var(--line)', opacity: t.enabled ? 1 : 0.5 }}>
@@ -57,12 +46,6 @@ export const TemplatesPage = ({ onBack }: { onBack: () => void }) => {
       </button>
 
       <GenerateRemindersButton />
-
-      <BackupSection />
-
-      <CalendarSyncSection />
-
-      <AccountSection />
 
       {editing && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setEditing(null)}>
@@ -112,73 +95,6 @@ export const TemplatesPage = ({ onBack }: { onBack: () => void }) => {
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-
-const BackupSection = () => {
-  const [items, setItems] = useState<DriveBackupMeta[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const last = lastBackupAt();
-  const stale = !last || Date.now() - last > SEVEN_DAYS;
-
-  const refresh = async () => {
-    try { setItems(await listDriveBackups()); setErr(null); }
-    catch (e) {
-      if (e instanceof DriveScopeError) setErr('Riconnetti l’account Google per accedere al Drive (sessione scaduta).');
-      else setErr('Impossibile leggere la lista backup.');
-    }
-  };
-
-  useEffect(() => { void refresh(); }, []);
-
-  const onCreate = async () => {
-    setBusy(true); setErr(null);
-    try {
-      const bytes = await buildZipBytes();
-      const today = new Date().toISOString().slice(0, 10);
-      await uploadToDrive(`cdb-backup-${today}.zip`, bytes);
-      markBackupNow();
-      await refresh();
-    } catch (e) {
-      if (e instanceof DriveScopeError) setErr('Riconnetti l’account Google: serve il consenso Drive per il backup.');
-      else setErr('Backup fallito. Riprova.');
-    } finally { setBusy(false); }
-  };
-
-  const onOpen = (id: string) => {
-    window.open(`https://drive.google.com/file/d/${id}/view`, '_blank');
-  };
-
-  return (
-    <section className="mt-6">
-      <h3 className="font-semibold mb-2">Backup su Google Drive</h3>
-      {stale && (
-        <div className="text-xs mb-2" style={{ color: 'var(--ink-soft)' }}>
-          {last ? 'L’ultimo backup risale a oltre 7 giorni fa.' : 'Nessun backup ancora creato.'}
-        </div>
-      )}
-      <button className="btn btn-primary mb-2" disabled={busy} onClick={() => void onCreate()}>
-        {busy ? 'Esportazione…' : 'Esporta backup ora'}
-      </button>
-      {err && <div className="text-xs mb-2" style={{ color: 'crimson' }}>{err}</div>}
-      <ul className="flex flex-col gap-1 text-sm">
-        {items.map(m => (
-          <li key={m.id} className="flex items-center gap-2">
-            <span className="flex-1">{m.name}</span>
-            <span className="text-xs" style={{ color: 'var(--ink-soft)' }}>
-              {(m.size / 1024).toFixed(1)} kB
-            </span>
-            <button className="btn btn-ghost text-xs" onClick={() => onOpen(m.id)}>Apri</button>
-          </li>
-        ))}
-        {items.length === 0 && !err && (
-          <li className="text-xs" style={{ color: 'var(--ink-soft)' }}>Nessun backup su Drive.</li>
-        )}
-      </ul>
-    </section>
+    </SettingsSubPage>
   );
 };
