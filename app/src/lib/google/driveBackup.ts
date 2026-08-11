@@ -1,4 +1,4 @@
-import { useAuth } from '../../store/auth';
+import { GoogleAuthError, googleFetch } from './token';
 
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name';
 const LIST   = 'https://www.googleapis.com/drive/v3/files?q=' +
@@ -11,10 +11,14 @@ export class DriveScopeError extends Error {
   constructor(msg = 'Missing Drive scope or token expired') { super(msg); this.name = 'DriveScopeError'; }
 }
 
-const token = (): string => {
-  const t = useAuth.getState().googleAccessToken;
-  if (!t) throw new DriveScopeError('Not authenticated for Drive');
-  return t;
+/** googleFetch gestisce token e retry; qui traduciamo solo l'errore di auth nel tipo del modulo. */
+const driveFetch = async (url: string, init?: RequestInit): Promise<Response> => {
+  try {
+    return await googleFetch(url, init);
+  } catch (e) {
+    if (e instanceof GoogleAuthError) throw new DriveScopeError(e.message);
+    throw e;
+  }
 };
 
 export interface DriveBackupMeta {
@@ -41,12 +45,9 @@ export const uploadToDrive = async (filename: string, bytes: Uint8Array): Promis
   body.set(bytes, head.length);
   body.set(tail, head.length + bytes.length);
 
-  const res = await fetch(UPLOAD, {
+  const res = await driveFetch(UPLOAD, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token()}`,
-      'Content-Type': `multipart/related; boundary=${boundary}`,
-    },
+    headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
     body,
   });
   if (res.status === 401 || res.status === 403) throw new DriveScopeError();
@@ -56,7 +57,7 @@ export const uploadToDrive = async (filename: string, bytes: Uint8Array): Promis
 };
 
 export const listDriveBackups = async (): Promise<DriveBackupMeta[]> => {
-  const res = await fetch(LIST, { headers: { Authorization: `Bearer ${token()}` } });
+  const res = await driveFetch(LIST);
   if (res.status === 401 || res.status === 403) throw new DriveScopeError();
   if (!res.ok) throw new Error(`Drive list ${res.status}: ${await res.text()}`);
   const j = (await res.json()) as { files: { id: string; name: string; size?: string; createdTime: string }[] };

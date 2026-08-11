@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { useAuth } from '../../../src/store/auth';
 import { searchByPhone, createContact, ScopeError } from '../../../src/lib/google/people';
+import { stubGisFailure, stubGisToken } from '../../helpers/gis';
 
 const mockFetch = (responses: Array<{ ok: boolean; status?: number; body: unknown }>) => {
   let i = 0;
@@ -17,9 +18,34 @@ const mockFetch = (responses: Array<{ ok: boolean; status?: number; body: unknow
 
 describe('people API', () => {
   beforeEach(() => {
-    useAuth.setState({ googleAccessToken: 'fake-token' });
+    stubGisFailure();
+    useAuth.setState({ user: null, googleAccessToken: 'fake-token', googleTokenExpiresAt: null });
   });
   afterEach(() => vi.restoreAllMocks());
+
+  it('dopo un reload (store senza token) ne ottiene uno silenziosamente', async () => {
+    useAuth.setState({ googleAccessToken: null, googleTokenExpiresAt: null });
+    stubGisToken('tok-silenzioso');
+    const fetchSpy = mockFetch([{ ok: true, body: { results: [] } }]);
+    vi.stubGlobal('fetch', fetchSpy);
+
+    await expect(searchByPhone('+393331234567')).resolves.toBeNull();
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer tok-silenzioso' }),
+      }),
+    );
+  });
+
+  it('lancia ScopeError se non c’è token e il refresh silenzioso fallisce', async () => {
+    useAuth.setState({ googleAccessToken: null, googleTokenExpiresAt: null });
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+
+    await expect(searchByPhone('+393331234567')).rejects.toThrow(ScopeError);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 
   describe('searchByPhone', () => {
     it('ritorna match esatto su numero E.164', async () => {

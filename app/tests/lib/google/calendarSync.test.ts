@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildBookingEvent, buildClosureEvent } from '../../../src/lib/google/calendarSync';
+import { useAuth } from '../../../src/store/auth';
+import { stubGisFailure, stubGisToken } from '../../helpers/gis';
 import type { Prenotazione, Chiusura } from '../../../src/types';
 
 const fetchMock = vi.fn();
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   fetchMock.mockReset();
+  stubGisFailure();
+  useAuth.setState({ user: null, googleAccessToken: 'tok', googleTokenExpiresAt: null });
 });
-
-vi.mock('../../../src/store/auth', () => ({
-  useAuth: { getState: () => ({ googleAccessToken: 'tok' }) },
-}));
 
 const booking = (over: Partial<Prenotazione> = {}): Prenotazione => ({
   id: 'b1', camera: 'lampone', checkin: '2026-08-10', checkout: '2026-08-14',
@@ -112,6 +112,46 @@ describe('listCalendars', () => {
     fetchMock.mockResolvedValueOnce(new Response('forbidden', { status: 403 }));
     const { listCalendars, CalendarScopeError } = await import('../../../src/lib/google/calendarSync');
     await expect(listCalendars()).rejects.toThrow(CalendarScopeError);
+  });
+
+  it('dopo un reload (store senza token) ne ottiene uno silenziosamente e completa la richiesta', async () => {
+    useAuth.setState({ googleAccessToken: null, googleTokenExpiresAt: null });
+    stubGisToken('tok-silenzioso');
+    fetchMock.mockResolvedValueOnce(new Response(
+      JSON.stringify({ items: [{ id: 'cal1', summary: 'Casa' }] }),
+      { status: 200 },
+    ));
+    const { listCalendars } = await import('../../../src/lib/google/calendarSync');
+
+    await expect(listCalendars()).resolves.toEqual([{ id: 'cal1', summary: 'Casa' }]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer tok-silenzioso' }),
+      }),
+    );
+  });
+
+  it('lancia CalendarScopeError se non esiste token e il refresh silenzioso fallisce', async () => {
+    useAuth.setState({ googleAccessToken: null, googleTokenExpiresAt: null });
+    const { listCalendars, CalendarScopeError } = await import('../../../src/lib/google/calendarSync');
+
+    await expect(listCalendars()).rejects.toThrow(CalendarScopeError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rinnova il token e ritenta una volta quando Google risponde 401', async () => {
+    stubGisToken('tok-rinnovato');
+    fetchMock
+      .mockResolvedValueOnce(new Response('unauthorized', { status: 401 }))
+      .mockResolvedValueOnce(new Response(
+        JSON.stringify({ items: [{ id: 'cal1', summary: 'Casa' }] }),
+        { status: 200 },
+      ));
+    const { listCalendars } = await import('../../../src/lib/google/calendarSync');
+
+    await expect(listCalendars()).resolves.toEqual([{ id: 'cal1', summary: 'Casa' }]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

@@ -120,3 +120,37 @@ Fixed 5 findings from the whole-branch review of the Google Calendar sync featur
   reads `auth.currentUser` too, and a mock missing it throws inside the click handler,
   silently aborting the handler before reaching the new enqueue calls (looked like the
   fix wasn't working; was actually just an incomplete mock).
+
+---
+
+## Google access token — root cause fix (2026-08-11)
+
+Finding 2 above (`googleAccessToken` mai ripristinato al reload) è stato risolto alla radice,
+non più solo mitigato. Riguardava Calendar **e** Drive backup **e** People API.
+
+- **Causa**: Firebase Auth non conserva né rinnova l'access token OAuth dei provider —
+  `credentialFromResult()` lo espone solo al momento del popup. Al reload
+  `onAuthStateChanged` ripristina l'utente ma non il token; inoltre il token scade dopo ~1h.
+- **Fix**: nuovo `app/src/lib/google/token.ts` che usa Google Identity Services per il
+  refresh silenzioso (`requestAccessToken({ prompt: '' })`, nessun popup: il consenso c'è già).
+  Firebase Auth resta per identità/Firestore, GIS solo per i token delle Google API.
+  `VITE_GOOGLE_CLIENT_ID` era già presente in `.env.local` e nei secret CI (residuo
+  pre-Firebase): nessuna nuova configurazione richiesta.
+- **API**: `getGoogleAccessToken()` (cache + skew 5 min + single-flight),
+  `googleFetch()` (Authorization automatico + 1 retry su 401/403 con token fresco),
+  `primeGoogleToken()` (chiamato da `initAuthListener` al ripristino sessione),
+  `setGoogleToken()` / `clearGoogleToken()`.
+- `calendarSync.ts`, `driveBackup.ts`, `people.ts` non leggono più lo store direttamente:
+  passano da `googleFetch` e traducono `GoogleAuthError` nel proprio ScopeError.
+- `useAuth` ha ora `googleTokenExpiresAt` (null = scadenza sconosciuta → token valido).
+- `useCalendarSyncQueue` dipende anche da `googleAccessToken`: senza, la coda non parte
+  quando il token arriva async dopo il mount.
+- `CalendarSyncSection` mostra "Riconnetti Google" anche da stato non connesso, se
+  `listCalendars` fallisce per sessione scaduta (prima era un vicolo cieco).
+- **Gotcha test**: in jsdom lo script GIS non si carica mai (né `load` né `error`) → ogni
+  refresh resterebbe appeso 10s. `tests/setup.ts` installa `stubGisFailure()` di default;
+  i test che vogliono un refresh riuscito usano `stubGisToken()` da `tests/helpers/gis.ts`.
+- Verificato: 273/273 test, `tsc --noEmit` pulito, `eslint .` pulito, `npm run build` OK.
+- **Non verificato**: smoke test manuale su device reale (richiede origin GitHub Pages fra
+  le *Authorized JavaScript origins* del client OAuth — molto probabilmente già a posto,
+  dato che il vecchio stack GIS girava sullo stesso origin).

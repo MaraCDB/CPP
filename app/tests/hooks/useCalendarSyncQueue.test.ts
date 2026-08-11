@@ -22,9 +22,11 @@ const calendarSettingsStore = create<FakeCalendarSettings>(() => ({
 }));
 vi.mock('../../src/store/calendarSettings', () => ({ useCalendarSettings: calendarSettingsStore }));
 
-beforeEach(() => {
+beforeEach(async () => {
   mockProcessQueue.mockClear();
   calendarSettingsStore.setState({ googleCalendarId: null, calendarSyncEnabled: false });
+  const { useAuth } = await import('../../src/store/auth');
+  useAuth.setState({ googleAccessToken: 'tok', googleTokenExpiresAt: null });
 });
 
 describe('useCalendarSyncQueue', () => {
@@ -64,6 +66,30 @@ describe('useCalendarSyncQueue', () => {
     act(() => {
       calendarSettingsStore.setState({ googleCalendarId: 'cal1', calendarSyncEnabled: true });
     });
+    expect(mockProcessQueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('non processa la coda finché manca il token Google', async () => {
+    const { useAuth } = await import('../../src/store/auth');
+    useAuth.setState({ googleAccessToken: null });
+    calendarSettingsStore.setState({ googleCalendarId: 'cal1', calendarSyncEnabled: true });
+    const { useCalendarSyncQueue } = await import('../../src/hooks/useCalendarSyncQueue');
+    renderHook(() => useCalendarSyncQueue('u1'));
+    expect(mockProcessQueue).not.toHaveBeenCalled();
+  });
+
+  it('processa la coda quando il token Google arriva dopo il mount (refresh silenzioso)', async () => {
+    const { useAuth } = await import('../../src/store/auth');
+    useAuth.setState({ googleAccessToken: null });
+    calendarSettingsStore.setState({ googleCalendarId: 'cal1', calendarSyncEnabled: true });
+    const { useCalendarSyncQueue } = await import('../../src/hooks/useCalendarSyncQueue');
+    renderHook(() => useCalendarSyncQueue('u1'));
+    expect(mockProcessQueue).not.toHaveBeenCalled();
+
+    act(() => {
+      useAuth.setState({ googleAccessToken: 'tok-fresco' });
+    });
+
     expect(mockProcessQueue).toHaveBeenCalledTimes(1);
   });
 

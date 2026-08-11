@@ -19,14 +19,18 @@ export const CalendarSyncSection = ({ onBack }: { onBack: () => void }) => {
   const [choosing, setChoosing] = useState(false);
   const [options, setOptions] = useState<GoogleCalendarListEntry[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
 
   const onConnect = async () => {
     setErr(null);
     try {
       setOptions(await listCalendars());
       setChoosing(true);
+      setExpired(false);
     } catch (e) {
-      setErr(e instanceof CalendarScopeError
+      const scopeError = e instanceof CalendarScopeError;
+      setExpired(scopeError);
+      setErr(scopeError
         ? 'Riconnetti l’account Google per accedere a Calendar (sessione scaduta).'
         : 'Impossibile leggere i calendari.');
     }
@@ -36,7 +40,10 @@ export const CalendarSyncSection = ({ onBack }: { onBack: () => void }) => {
     setErr(null);
     try {
       await signIn();
+      setExpired(false);
       runCalendarSyncQueueNow();
+      // Da non connesso il riconnetti serve proprio a poter scegliere il calendario.
+      if (!calendarId) await onConnect();
     } catch {
       setErr('Impossibile riconnettere l’account Google.');
     }
@@ -58,6 +65,9 @@ export const CalendarSyncSection = ({ onBack }: { onBack: () => void }) => {
         <>
           <div className="text-sm mb-2" style={{ color: 'var(--ink-soft)' }}>Non connesso</div>
           <button className="btn btn-primary mb-2" onClick={() => void onConnect()}>Connetti calendario</button>
+          {expired && (
+            <button className="btn btn-ghost mb-2" onClick={() => void onReconnect()}>Riconnetti Google</button>
+          )}
         </>
       )}
       {err && <div className="text-xs mb-2" style={{ color: 'crimson' }}>{err}</div>}

@@ -1,16 +1,39 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useAuth } from '../../../src/store/auth';
+import { stubGisFailure, stubGisToken } from '../../helpers/gis';
 
 const fetchMock = vi.fn();
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   fetchMock.mockReset();
+  stubGisFailure();
+  useAuth.setState({ user: null, googleAccessToken: 'tok', googleTokenExpiresAt: null });
 });
 
-vi.mock('../../../src/store/auth', () => ({
-  useAuth: { getState: () => ({ googleAccessToken: 'tok' }) },
-}));
-
 describe('driveBackup', () => {
+  it('dopo un reload (store senza token) ne ottiene uno silenziosamente', async () => {
+    useAuth.setState({ googleAccessToken: null, googleTokenExpiresAt: null });
+    stubGisToken('tok-silenzioso');
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ files: [] }), { status: 200 }));
+    const { listDriveBackups } = await import('../../../src/lib/google/driveBackup');
+
+    await expect(listDriveBackups()).resolves.toEqual([]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer tok-silenzioso' }),
+      }),
+    );
+  });
+
+  it('lancia DriveScopeError se non c’è token e il refresh silenzioso fallisce', async () => {
+    useAuth.setState({ googleAccessToken: null, googleTokenExpiresAt: null });
+    const { listDriveBackups, DriveScopeError } = await import('../../../src/lib/google/driveBackup');
+
+    await expect(listDriveBackups()).rejects.toThrow(DriveScopeError);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('uploadToDrive issues multipart POST to upload endpoint', async () => {
     fetchMock.mockResolvedValueOnce(new Response(
       JSON.stringify({ id: 'driveFileId123', name: 'backup.zip' }),

@@ -97,6 +97,31 @@ describe('CalendarSyncSection', () => {
     expect(useCalendarSettings.getState().googleCalendarId).toBeNull();
   });
 
+  it('offre "Riconnetti Google" anche da non connesso, se la lista calendari fallisce per sessione scaduta', async () => {
+    const { CalendarScopeError } = await import('../../src/lib/google/calendarSync');
+    mockListCalendars.mockRejectedValueOnce(new CalendarScopeError());
+    render(<CalendarSyncSection onBack={() => {}} />);
+
+    fireEvent.click(screen.getByText(/Connetti calendario/i));
+
+    await waitFor(() => expect(screen.getByText(/sessione scaduta/i)).toBeInTheDocument());
+    expect(screen.getByText(/Riconnetti Google/i)).toBeInTheDocument();
+  });
+
+  it('dopo il riconnetti da non connesso ritenta la lista calendari', async () => {
+    const { CalendarScopeError } = await import('../../src/lib/google/calendarSync');
+    mockListCalendars.mockRejectedValueOnce(new CalendarScopeError());
+    render(<CalendarSyncSection onBack={() => {}} />);
+    fireEvent.click(screen.getByText(/Connetti calendario/i));
+    await waitFor(() => expect(screen.getByText(/Riconnetti Google/i)).toBeInTheDocument());
+
+    mockListCalendars.mockResolvedValueOnce([{ id: 'cal1', summary: 'Casa' }]);
+    fireEvent.click(screen.getByText(/Riconnetti Google/i));
+
+    await waitFor(() => expect(screen.getByText('Casa')).toBeInTheDocument());
+    expect(mockSignIn).toHaveBeenCalledTimes(1);
+  });
+
   it('"Riconnetti Google" è visibile quando connesso e rifà il login e svuota la coda', async () => {
     useCalendarSettings.setState({ googleCalendarId: 'cal1', googleCalendarName: 'Casa', calendarSyncEnabled: true });
     render(<CalendarSyncSection onBack={() => {}} />);

@@ -1,5 +1,5 @@
-import { useAuth } from '../../store/auth';
 import { toE164 } from '../phone';
+import { GoogleAuthError, googleFetch } from './token';
 
 const BASE = 'https://people.googleapis.com/v1';
 const READ_MASK = 'names,phoneNumbers,emailAddresses';
@@ -16,12 +16,16 @@ export class ScopeError extends Error {
 }
 
 const call = async <T = unknown>(url: string, init: RequestInit = {}): Promise<T> => {
-  const t = useAuth.getState().googleAccessToken;
-  if (!t) throw new Error('No access token');
-  const res = await fetch(url, {
-    ...init,
-    headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
-  });
+  let res: Response;
+  try {
+    res = await googleFetch(url, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...(init.headers || {}) },
+    });
+  } catch (e) {
+    if (e instanceof GoogleAuthError) throw new ScopeError(e.message);
+    throw e;
+  }
   if (res.status === 403) throw new ScopeError();
   if (!res.ok) throw new Error(`People API ${res.status}: ${await res.text()}`);
   return res.json();

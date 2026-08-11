@@ -1,7 +1,7 @@
 import type { Prenotazione, Chiusura } from '../../types';
 import { iso, parseISO, addDays } from '../date';
-import { useAuth } from '../../store/auth';
 import { useCalendarSettings } from '../../store/calendarSettings';
+import { GoogleAuthError, googleFetch } from './token';
 import { enqueue, listQueue, removeFromQueue } from './calendarQueue';
 
 const BASE = 'https://www.googleapis.com/calendar/v3';
@@ -10,10 +10,14 @@ export class CalendarScopeError extends Error {
   constructor(msg = 'Missing Calendar scope or token expired') { super(msg); this.name = 'CalendarScopeError'; }
 }
 
-const token = (): string => {
-  const t = useAuth.getState().googleAccessToken;
-  if (!t) throw new CalendarScopeError('Not authenticated for Calendar');
-  return t;
+/** googleFetch gestisce token e retry; qui traduciamo solo l'errore di auth nel tipo del modulo. */
+const calFetch = async (url: string, init?: RequestInit): Promise<Response> => {
+  try {
+    return await googleFetch(url, init);
+  } catch (e) {
+    if (e instanceof GoogleAuthError) throw new CalendarScopeError(e.message);
+    throw e;
+  }
 };
 
 export interface CalendarEventBody {
@@ -30,9 +34,7 @@ export interface GoogleCalendarListEntry {
 }
 
 export const listCalendars = async (): Promise<GoogleCalendarListEntry[]> => {
-  const res = await fetch(`${BASE}/users/me/calendarList`, {
-    headers: { Authorization: `Bearer ${token()}` },
-  });
+  const res = await calFetch(`${BASE}/users/me/calendarList`);
   if (res.status === 401 || res.status === 403) throw new CalendarScopeError();
   if (!res.ok) throw new Error(`Calendar list ${res.status}: ${await res.text()}`);
   const j = (await res.json()) as { items: { id: string; summary: string }[] };
@@ -42,7 +44,7 @@ export const listCalendars = async (): Promise<GoogleCalendarListEntry[]> => {
 export const findEventIdByCdbId = async (calendarId: string, cdbId: string): Promise<string | null> => {
   const url = `${BASE}/calendars/${encodeURIComponent(calendarId)}/events?` +
     `privateExtendedProperty=${encodeURIComponent(`cdb_id=${cdbId}`)}`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token()}` } });
+  const res = await calFetch(url);
   if (res.status === 401 || res.status === 403) throw new CalendarScopeError();
   if (!res.ok) throw new Error(`Calendar event lookup ${res.status}: ${await res.text()}`);
   const j = (await res.json()) as { items: { id: string }[] };
@@ -89,9 +91,9 @@ export const upsertEvent = async (calendarId: string, body: CalendarEventBody): 
   const url = existingId
     ? `${BASE}/calendars/${encodeURIComponent(calendarId)}/events/${existingId}`
     : `${BASE}/calendars/${encodeURIComponent(calendarId)}/events`;
-  const res = await fetch(url, {
+  const res = await calFetch(url, {
     method: existingId ? 'PATCH' : 'POST',
-    headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   if (res.status === 401 || res.status === 403) throw new CalendarScopeError();
@@ -101,9 +103,8 @@ export const upsertEvent = async (calendarId: string, body: CalendarEventBody): 
 export const deleteEventByCdbId = async (calendarId: string, cdbId: string): Promise<void> => {
   const id = await findEventIdByCdbId(calendarId, cdbId);
   if (!id) return;
-  const res = await fetch(`${BASE}/calendars/${encodeURIComponent(calendarId)}/events/${id}`, {
+  const res = await calFetch(`${BASE}/calendars/${encodeURIComponent(calendarId)}/events/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token()}` },
   });
   if (res.status === 401 || res.status === 403) throw new CalendarScopeError();
   if (!res.ok && res.status !== 410) throw new Error(`Calendar event delete ${res.status}: ${await res.text()}`);
