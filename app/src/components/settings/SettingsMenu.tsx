@@ -13,6 +13,8 @@ const ITEMS: { key: Exclude<Section, 'menu'>; icon: string; title: string; sub: 
   { key: 'account', icon: '👤', title: 'Account', sub: 'Email e disconnessione' },
 ];
 
+const PLANNER_URL = `${import.meta.env.BASE_URL}planner-prezzi.html`;
+
 export const SettingsMenu = ({ onBack }: { onBack: () => void }) => {
   const [section, setSection] = useState<Section>('menu');
   const toMenu = () => setSection('menu');
@@ -46,6 +48,22 @@ export const SettingsMenu = ({ onBack }: { onBack: () => void }) => {
               </button>
             </li>
           ))}
+          <li>
+            <a
+              href={PLANNER_URL}
+              target="_blank"
+              rel="noopener"
+              className="w-full text-left p-3 rounded-xl border flex items-center gap-3"
+              style={{ borderColor: 'var(--line)' }}
+            >
+              <span style={{ fontSize: 22 }}>💶</span>
+              <span className="flex-1">
+                <span className="block font-medium text-sm">Planner prezzi</span>
+                <span className="block text-[11px]" style={{ color: 'var(--ink-soft)' }}>Calcola i prezzi per Feratel, bb.it, Airbnb e Booking</span>
+              </span>
+              <span style={{ color: 'var(--ink-soft)' }}>↗</span>
+            </a>
+          </li>
         </ul>
       </div>
     </div>

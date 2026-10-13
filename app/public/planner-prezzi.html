@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planner Prezzi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: pannello input a sinistra (sticky), a destra una matrice canale x numero ospiti, ripetuta per soggiorno breve e lungo. Accento lampone, neutri verde-grigio. */
+:root {
+  color-scheme: light;
+  --bg: #EEF1EE;
+  --surface: #FFFFFF;
+  --ink: #1C2723;
+  --muted: #5C6B65;
+  --line: #D5DCD7;
+  --accent: #B02A4F;
+  --accent-soft: #F6E3E8;
+  --good: #2F7A4B;
+  --font-display: "Bricolage Grotesque", "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-num: "IBM Plex Mono", Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121917; --surface: #1A2321; --ink: #E6ECE8; --muted: #93A39B; --line: #2B3834;
+    --accent: #E0587D; --accent-soft: #3A1E27; --good: #6CC28A;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 15px/1.5 var(--font-body);
+  padding-inline: 16px;
+}
+.wrap { max-width: 1440px; margin-inline: auto; padding-block: 28px 48px; display: grid; gap: 24px; }
+
+h1 { font: 700 28px/1.1 var(--font-display); letter-spacing: .04em; margin: 0; }
+
+.layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; min-width: 0; }
+@media (min-width: 861px) { .panel { position: sticky; top: 16px; } }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+legend { padding: 0; margin-bottom: 12px; font: 600 12px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.field { display: grid; grid-template-rows: 1fr auto; gap: 4px; min-width: 0; }
+.field label { font-size: 13px; line-height: 1.3; color: var(--muted); align-self: end; }
+.field label em { font-style: normal; color: var(--accent); font-weight: 500; }
+.input { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.input:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.input input { flex: 1; width: 100%; min-width: 0; border: 0; background: transparent; color: var(--ink);
+  font: 500 16px/1 var(--font-num); padding: 11px 12px; text-align: right; outline: none; }
+.input .unit { padding-right: 12px; color: var(--muted); font: 400 14px var(--font-num); }
+.input.invalid { border-color: var(--accent); }
+.field.big input { font-size: 20px; padding-block: 12px; }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.grp { grid-column: 1 / -1; margin: 6px 0 0; font: 600 13px/1.2 var(--font-body); color: var(--ink); }
+.grp:first-child { margin-top: 0; }
+.grp-note { grid-column: 1 / -1; margin: -6px 0 0; font-size: 12px; color: var(--muted); }
+.hint { font-size: 12px; color: var(--muted); }
+.reset { justify-self: start; font: 500 13px var(--font-body); color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+.reset:hover { color: var(--ink); border-color: var(--muted); }
+.reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+main { display: grid; gap: 24px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.card h2 { font: 700 17px/1.2 var(--font-display); margin: 0; padding: 18px 20px 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.card .sub { margin: 0; padding: 0 20px 14px; font-size: 13px; color: var(--muted); }
+.scroll { overflow-x: auto; }
+.badge { font: 600 12px/1 var(--font-num); color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 5px 8px; }
+
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 12px 14px; text-align: right; border-top: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+th:first-child, td:first-child { text-align: left; padding-left: 20px; white-space: normal; width: 190px; }
+th:last-child, td:last-child { padding-right: 20px; }
+thead th { border-top: 0; font: 600 12px/1.3 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--bg); vertical-align: bottom; }
+thead th small { display: block; font: 500 11px/1.3 var(--font-body); letter-spacing: 0; text-transform: none; color: var(--accent); }
+.ch { font-weight: 600; }
+.ch small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+.price { display: block; font: 600 20px/1.2 var(--font-num); }
+.net { display: block; margin-top: 2px; font: 400 12.5px/1.2 var(--font-num); color: var(--muted); }
+.net.ok { color: var(--good); }
+tr.target td { background: var(--bg); }
+tr.target .price { font-size: 15px; font-weight: 500; color: var(--muted); }
+tr.target .ch { font-size: 13px; color: var(--muted); font-weight: 500; }
+tr.bnb td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+tr.sub-row td { border-top: 1px dashed var(--line); }
+
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.top h1 { margin-right: auto; }
+.stamp { display: none; font-size: 13px; color: var(--muted); }
+.actions { display: flex; gap: 8px; }
+.btn { font: 600 13px var(--font-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#btn-pdf { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.note { padding: 14px 20px; font-size: 13px; color: var(--muted); background: var(--bg); border-top: 1px solid var(--line); }
+.formula { font-family: var(--font-num); font-size: 12.5px; color: var(--ink); }
+
+/* Stampa / PDF: A4 orizzontale, sempre in chiaro, senza spezzare tabelle e righe */
+@page { size: A4 landscape; margin: 9mm; }
+@media print {
+  :root { color-scheme: light; --bg: #F3F5F3; --surface: #FFFFFF; --ink: #1C2723; --muted: #5C6B65; --line: #D5DCD7; --accent: #B02A4F; --accent-soft: #F6E3E8; --good: #2F7A4B; }
+  body { background: #fff; padding-inline: 0; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .no-print, .hint, .reset { display: none !important; }
+  .stamp { display: block; }
+  .wrap { max-width: none; padding-block: 0; gap: 8px; }
+  h1 { font-size: 20px; }
+  .layout { grid-template-columns: 64mm minmax(0, 1fr); gap: 10px; align-items: start; }
+  .panel { position: static; padding: 8px; gap: 8px; break-inside: avoid; }
+  fieldset, .row2 { gap: 6px; }
+  legend { margin-bottom: 6px; font-size: 10px; }
+  .field label { font-size: 10px; }
+  .input input { font-size: 12px; padding: 5px 8px; }
+  .field.big input { font-size: 13px; padding-block: 6px; }
+  .grp { font-size: 11px; }
+  .grp-note { font-size: 10px; }
+  main { gap: 8px; }
+  .card { break-inside: avoid; }
+  .card h2 { font-size: 13px; padding: 8px 12px 2px; }
+  .card .sub { padding: 0 12px 6px; font-size: 10px; }
+  th, td { padding: 5px 8px; }
+  th:first-child, td:first-child { padding-left: 12px; width: 150px; }
+  th:last-child, td:last-child { padding-right: 12px; }
+  thead th { font-size: 9px; }
+  .price { font-size: 14px; }
+  tr.target .price { font-size: 11px; }
+  .net { font-size: 9.5px; }
+  .ch small { font-size: 9.5px; }
+  tr { break-inside: avoid; }
+  .note { padding: 6px 12px; font-size: 9.5px; }
+  .formula { font-size: 9px; }
+  .scroll { overflow: visible; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>PLANNER PREZZI</h1>
+    <span class="stamp" id="stamp"></span>
+    <div class="actions no-print">
+      <button type="button" class="btn" id="btn-pdf">Salva PDF</button>
+      <button type="button" class="btn" id="btn-csv">Esporta CSV</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel" aria-label="Dati di partenza">
+      <fieldset>
+        <legend>Netto a notte che vuoi incassare</legend>
+        <div class="row2">
+          <div class="field big">
+            <label for="n1">1 ospite <em>uso singola</em></label>
+            <div class="input"><input id="n1" type="text" inputmode="decimal" value="110"><span class="unit">&euro;</span></div>
+          </div>
+          <div class="field big">
+            <label for="n2">2 ospiti</label>
+            <div class="input"><input id="n2" type="text" inputmode="decimal" value="160"><span class="unit">&euro;</span></div>
+          </div>
+          <div class="field big">
+            <label for="n3">3 ospiti</label>
+            <div class="input"><input id="n3" type="text" inputmode="decimal" value="240"><span class="unit">&euro;</span></div>
+          </div>
+          <div class="field big">
+            <label for="n4">4 ospiti</label>
+            <div class="input"><input id="n4" type="text" inputmode="decimal" value="320"><span class="unit">&euro;</span></div>
+          </div>
+        </div>
+        <span class="hint">Quanto vuoi che ti resti in tasca dopo le commissioni, per ogni numero di ospiti.</span>
+      </fieldset>
+
+      <fieldset>
+        <legend>Soggiorno lungo</legend>
+        <div class="row2">
+          <div class="field">
+            <label for="soglia">Da notti</label>
+            <div class="input"><input id="soglia" type="text" inputmode="numeric" value="3"></div>
+          </div>
+          <div class="field">
+            <label for="sconto">Sconto</label>
+            <div class="input"><input id="sconto" type="text" inputmode="decimal" value="5"><span class="unit">%</span></div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Commissioni</legend>
+        <div class="row2">
+          <h3 class="grp">Feratel</h3>
+          <p class="grp-note">Nessuna commissione: il prezzo coincide con il netto.</p>
+          <h3 class="grp">bed&amp;breakfast.it</h3>
+          <div class="field">
+            <label for="anticipo">Sconto non rimborsabile</label>
+            <div class="input"><input id="anticipo" type="text" inputmode="decimal" value="10"><span class="unit">%</span></div>
+          </div>
+          <div class="field">
+            <label for="carta-bb">Carta</label>
+            <div class="input"><input id="carta-bb" type="text" inputmode="decimal" value="1,95"><span class="unit">%</span></div>
+          </div>
+          <div class="field">
+            <label for="fisso-bb">Fisso (carta + bonifico)</label>
+            <div class="input"><input id="fisso-bb" type="text" inputmode="decimal" value="0,75"><span class="unit">&euro;</span></div>
+          </div>
+          <h3 class="grp">Airbnb e Booking</h3>
+          <div class="field">
+            <label for="c-airbnb">Airbnb</label>
+            <div class="input"><input id="c-airbnb" type="text" inputmode="decimal" value="15,5"><span class="unit">%</span></div>
+          </div>
+          <div class="field">
+            <label for="c-booking">Booking</label>
+            <div class="input"><input id="c-booking" type="text" inputmode="decimal" value="18"><span class="unit">%</span></div>
+          </div>
+          <div class="field">
+            <label for="iva">IVA sulla comm.</label>
+            <div class="input"><input id="iva" type="text" inputmode="decimal" value="22"><span class="unit">%</span></div>
+          </div>
+          <div class="field">
+            <label for="carta">Costi carta Booking</label>
+            <div class="input"><input id="carta" type="text" inputmode="decimal" value="1,5"><span class="unit">%</span></div>
+          </div>
+          <h3 class="grp">Arrotondamento</h3>
+          <div class="field">
+            <label for="arrot">Arrotonda a</label>
+            <div class="input"><input id="arrot" type="text" inputmode="decimal" value="5"><span class="unit">&euro;</span></div>
+          </div>
+        </div>
+        <span class="hint">Carta bb.it: 1,95% carte consumer, 2,95% commerciali, 3,50% non europee. Il fisso (0,25 &euro; a transazione + 0,50 &euro; a bonifico) &egrave; contato su una notte sola, quindi nei soggiorni lunghi ti resta qualcosa in pi&ugrave;. Metti 0 in &quot;Arrotonda a&quot; per avere i centesimi.</span>
+        <button type="button" class="reset" id="reset">Ripristina valori iniziali</button>
+      </fieldset>
+    </aside>
+
+    <main>
+      <section class="card" aria-labelledby="t-corto">
+        <h2 id="t-corto">Prezzi da inserire <span class="badge" id="badge-corto"></span></h2>
+        <p class="sub">Sotto ogni prezzo trovi quanto ti resta dopo le commissioni.</p>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Canale</th>
+                <th>1 ospite<small>uso singola</small></th>
+                <th>2 ospiti</th>
+                <th>3 ospiti</th>
+                <th>4 ospiti</th>
+              </tr>
+            </thead>
+            <tbody id="body-corto"></tbody>
+          </table>
+        </div>
+        <div class="note" id="note-corto"></div>
+      </section>
+
+      <section class="card" aria-labelledby="t-lungo">
+        <h2 id="t-lungo">Prezzi da inserire <span class="badge" id="badge-lungo"></span></h2>
+        <p class="sub">Lo sconto riduce quello che ti resta. Qui vedi di quanto.</p>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Canale</th>
+                <th>1 ospite<small>uso singola</small></th>
+                <th>2 ospiti</th>
+                <th>3 ospiti</th>
+                <th>4 ospiti</th>
+              </tr>
+            </thead>
+            <tbody id="body-lungo"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  var STORAGE_KEY = "planner-prezzi-v2";
+  var IDS = ["n1", "n2", "n3", "n4", "soglia", "sconto", "c-airbnb", "c-booking", "iva", "carta", "anticipo", "carta-bb", "fisso-bb", "arrot"];
+  var DEFAULTS = {};
+  IDS.forEach(function (id) { DEFAULTS[id] = document.getElementById(id).value; });
+
+  function el(id) { return document.getElementById(id); }
+
+  function parse(id) {
+    var raw = el(id).value.trim().replace(/\s/g, "").replace(",", ".");
+    if (raw === "") return NaN;
+    var n = Number(raw);
+    return isFinite(n) ? n : NaN;
+  }
+
+  function round2(x) { return Math.round(x * 100) / 100; }
+
+  function fmtNet(x) {
+    return x.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtPrice(x) {
+    var r = round2(x);
+    return Number.isInteger(r) ? r.toLocaleString("it-IT") : fmtNet(r);
+  }
+  function fmtPct(x) {
+    return (Math.round(x * 10) / 10).toLocaleString("it-IT", { maximumFractionDigits: 1 });
+  }
+
+  function roundUp(x, step) {
+    if (!(step > 0)) return x;
+    return Math.ceil(x / step - 1e-9) * step;
+  }
+
+  function load() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (saved) IDS.forEach(function (id) { if (typeof saved[id] === "string") el(id).value = saved[id]; });
+    } catch (e) { /* storage non disponibile: si usano i valori iniziali */ }
+  }
+  function save() {
+    try {
+      var data = {};
+      IDS.forEach(function (id) { data[id] = el(id).value; });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) { /* ignora */ }
+  }
+
+  function cell(p, n, ok) {
+    if (p === null) return '<td><span class="price">&mdash;</span></td>';
+    return '<td data-p="' + round2(p) + '" data-n="' + round2(n) + '"><span class="price">' + fmtPrice(p) + ' &euro;</span><span class="net' + (ok ? ' ok' : '') + '">ti restano ' + fmtNet(n) + '</span></td>';
+  }
+
+  function render() {
+    var nets = [parse("n1"), parse("n2"), parse("n3"), parse("n4")];
+    var soglia = Math.round(parse("soglia"));
+    var sconto = parse("sconto") / 100;
+    var iva = parse("iva") / 100;
+    var cA = parse("c-airbnb") / 100;
+    var cB = parse("c-booking") / 100;
+    var carta = parse("carta") / 100;
+    var anticipo = parse("anticipo") / 100;
+    var cartaBB = parse("carta-bb") / 100;
+    var fissoBB = parse("fisso-bb");
+    var step = parse("arrot");
+    if (isNaN(step)) step = 0;
+
+    IDS.forEach(function (id) { el(id).parentNode.classList.toggle("invalid", isNaN(parse(id))); });
+
+    var fA = 1 - cA * (1 + iva);
+    var fB = 1 - cB * (1 + iva) - carta;
+    var fN = (1 - anticipo) * (1 - cartaBB);
+    var okA = fA > 0, okB = fB > 0, okN = fN > 0 && fissoBB >= 0;
+    var okSconto = !isNaN(sconto) && sconto >= 0 && sconto < 1;
+
+    // calcola per ogni numero di ospiti i prezzi da inserire per canale
+    var calc = nets.map(function (N) {
+      if (isNaN(N) || N <= 0) return null;
+      var r = { N: N, feratel: { p: N, n: N } };
+      if (okA) { var pa = roundUp(N / fA, step); r.airbnb = { p: pa, n: pa * fA }; }
+      if (okB) { var pb = roundUp(N / fB, step); r.booking = { p: pb, n: pb * fB }; }
+      if (okN) {
+        var ps = roundUp((N + fissoBB) / fN, step);
+        r.bnbS = { p: ps, n: ps, fix: 0 };
+        r.bnbN = { p: ps * (1 - anticipo), n: ps * fN - fissoBB, fix: fissoBB };
+      }
+      return r;
+    });
+
+    var rows = [
+      { key: "target", cls: "target", csv: "Il tuo netto", name: "Il tuo netto", sub: "" },
+      { key: "feratel", csv: "Feratel", name: "Feratel", sub: "nessuna commissione" },
+      { key: "bnbS", cls: "bnb", csv: "bed&amp;breakfast.it paga in struttura", name: "bed&amp;breakfast.it", sub: "paga in struttura" },
+      { key: "bnbN", cls: "bnb sub-row", csv: "bed&amp;breakfast.it non rimborsabile", name: "", sub: "non rimborsabile (&minus;" + (isNaN(anticipo) ? "?" : fmtPct(anticipo * 100)) + "%)" },
+      { key: "airbnb", csv: "Airbnb", name: "Airbnb", sub: okA ? "commissione effettiva " + fmtPct((1 - fA) * 100) + "%" : "commissione non valida" },
+      { key: "booking", csv: "Booking", name: "Booking", sub: okB ? "commissione effettiva " + fmtPct((1 - fB) * 100) + "%" : "commissione non valida" }
+    ];
+
+    function build(lungo) {
+      var factor = lungo ? (okSconto ? 1 - sconto : null) : 1;
+      return rows.map(function (row) {
+        if (lungo && row.key === "target") return "";
+        var html = '<tr class="' + (row.cls || "") + '" data-csv="' + row.csv + '"><td class="ch">' + row.name + (row.sub ? "<small>" + row.sub + "</small>" : "") + "</td>";
+        calc.forEach(function (c) {
+          if (!c) { html += cell(null); return; }
+          if (row.key === "target") { html += '<td data-p="' + c.N + '"><span class="price">' + fmtPrice(c.N) + " &euro;</span></td>"; return; }
+          var v = c[row.key];
+          if (!v || factor === null) { html += cell(null); return; }
+          var fix = v.fix || 0;
+          var p = v.p * factor, n = (v.n + fix) * factor - fix;
+          html += cell(p, n, !lungo && n >= c.N - 0.005);
+        });
+        return html + "</tr>";
+      }).join("");
+    }
+
+    el("body-corto").innerHTML = build(false);
+    el("body-lungo").innerHTML = build(true);
+
+    var corto = isNaN(soglia) || soglia < 2 ? "tutte le notti" : (soglia === 2 ? "1 notte" : "1–" + (soglia - 1) + " notti");
+    el("badge-corto").textContent = corto;
+    el("badge-lungo").textContent = isNaN(soglia) || isNaN(sconto) ? "soggiorno lungo" : "da " + soglia + " notti −" + fmtPct(sconto * 100) + "%";
+
+    // nota con l'esempio calcolato sul netto per 2 ospiti
+    var c2 = calc[1];
+    var note = "Prezzi arrotondati per eccesso a " + (step > 0 ? fmtPrice(step) + " €" : "nessun valore (centesimi)") + ", poi ricalcolo quanto ti resta davvero. ";
+    note += 'Airbnb e Booking: <span class="formula">prezzo = netto ÷ (1 − commissione × (1 + IVA) − costi carta)</span>.';
+    if (c2 && okN) {
+      var raw = (c2.N + fissoBB) / fN;
+      note += ' bed&amp;breakfast.it: <span class="formula">' + "(" + fmtPrice(c2.N) + " + " + fmtNet(fissoBB) + " fisso) ÷ (1 − " + fmtPct(anticipo * 100) + "%) ÷ (1 − " + (Math.round(cartaBB * 10000) / 100).toLocaleString("it-IT", { maximumFractionDigits: 2 }) + "% carta) = " + fmtNet(raw) + (step > 0 ? " → " + fmtPrice(c2.bnbS.p) + " €" : "") + "</span>, così anche con lo sconto non rimborsabile e i costi carta non scendi sotto il netto.";
+    }
+    el("note-corto").innerHTML = note;
+  }
+
+  function onChange() { render(); save(); }
+
+  function today() {
+    var d = new Date();
+    return { it: d.toLocaleDateString("it-IT"), iso: d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) };
+  }
+
+  // PDF: il titolo diventa il nome file proposto da "Salva come PDF"
+  var baseTitle = document.title;
+  window.addEventListener("beforeprint", function () {
+    var t = today();
+    el("stamp").textContent = "Prezzi del " + t.it;
+    document.title = "Planner Prezzi " + t.iso;
+  });
+  window.addEventListener("afterprint", function () { document.title = baseTitle; });
+  el("btn-pdf").addEventListener("click", function () { window.print(); });
+
+  // CSV: separatore ";" e virgola decimale, si apre direttamente in Excel
+  function csvNum(v) { return String(v).replace(".", ","); }
+  function tableToCsv(tbodyId, title, lines) {
+    lines.push("");
+    lines.push(title);
+    lines.push(["Canale", "1 ospite prezzo", "1 ospite ti restano", "2 ospiti prezzo", "2 ospiti ti restano", "3 ospiti prezzo", "3 ospiti ti restano", "4 ospiti prezzo", "4 ospiti ti restano"].join(";"));
+    Array.prototype.forEach.call(el(tbodyId).querySelectorAll("tr"), function (tr) {
+      var out = [tr.getAttribute("data-csv")];
+      Array.prototype.forEach.call(tr.querySelectorAll("td[data-p], td:not(.ch)"), function (td) {
+        var p = td.getAttribute("data-p"), n = td.getAttribute("data-n");
+        out.push(p === null ? "" : csvNum(p));
+        out.push(n === null ? "" : csvNum(n));
+      });
+      lines.push(out.join(";"));
+    });
+  }
+  el("btn-csv").addEventListener("click", function () {
+    var t = today();
+    var lines = ["Planner prezzi;" + t.it, ""];
+    lines.push("Impostazioni");
+    [["Netto 1 ospite (uso singola)", "n1"], ["Netto 2 ospiti", "n2"], ["Netto 3 ospiti", "n3"], ["Netto 4 ospiti", "n4"],
+     ["Soggiorno lungo da notti", "soglia"], ["Sconto soggiorno lungo %", "sconto"], ["Sconto non rimborsabile bb.it %", "anticipo"],
+     ["Carta bb.it %", "carta-bb"], ["Fisso bb.it", "fisso-bb"], ["Commissione Airbnb %", "c-airbnb"], ["Commissione Booking %", "c-booking"],
+     ["IVA sulla commissione %", "iva"], ["Costi carta Booking %", "carta"], ["Arrotonda a", "arrot"]
+    ].forEach(function (s) { lines.push(s[0] + ";" + el(s[1]).value); });
+    tableToCsv("body-corto", el("badge-corto").textContent + " (prezzi da inserire e netto)", lines);
+    tableToCsv("body-lungo", el("badge-lungo").textContent + " (prezzi da inserire e netto)", lines);
+    var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "planner-prezzi-" + t.iso + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+
+  load();
+  IDS.forEach(function (id) { el(id).addEventListener("input", onChange); });
+  el("reset").addEventListener("click", function () {
+    IDS.forEach(function (id) { el(id).value = DEFAULTS[id]; });
+    onChange();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
