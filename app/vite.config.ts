@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: '/CPP/',   // GitHub Pages path: https://maracdb.github.io/CPP/
+  base: process.env.PUBLISH_BASE_PATH ?? '/CPP/',
   plugins: [
     react(),
     VitePWA({

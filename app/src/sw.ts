@@ -4,6 +4,7 @@ import { openDB } from 'idb';
 import type { BookingTask } from './types';
 import { pickToNotify } from './lib/reminders/pickToNotify';
 import { buildDigestNotification } from './lib/reminders/buildDigest';
+import { buildNotificationUrl, findWindowInScope } from './lib/reminders/notificationTarget';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -65,13 +66,13 @@ self.addEventListener('notificationclick', (event) => {
   e.notification.close();
   e.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const url = `/CPP/?booking=${data?.bookingId ?? ''}&task=${data?.taskId ?? ''}`;
-    const existing = wins.find(w => w.url.includes('/CPP/'));
+    const scope = self.registration.scope;
+    const existing = findWindowInScope(wins, scope);
     if (existing) {
       await existing.focus();
       existing.postMessage({ type: 'open-task', bookingId: data?.bookingId, taskId: data?.taskId });
     } else {
-      await self.clients.openWindow(url);
+      await self.clients.openWindow(buildNotificationUrl(scope, data));
     }
   })());
 });
